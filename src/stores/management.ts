@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { TopicsApi, type TopicDto } from '../lib/topicsApi'
+import { CommitteesApi, type CommitteeDto } from '../lib/committeesApi'
 
 export interface Topic {
     id: string
@@ -40,14 +41,16 @@ function mapTopicDtoToTopic(dto: TopicDto): Topic {
     }
 }
 
-const mockCommittees: Committee[] = [
-    { id: '1', name: 'Stadtverordnetenversammlung', shortName: 'STVV', description: 'Hauptorgan der kommunalen Selbstverwaltung', created_at: '2024-01-10T08:00:00Z', updated_at: '2024-01-10T08:00:00Z' },
-    { id: '2', name: 'Haupt- und Finanzausschuss', shortName: 'HFA', description: 'Beratung über Haushalt und Finanzen', created_at: '2024-01-12T10:00:00Z', updated_at: '2024-01-12T10:00:00Z' },
-    { id: '3', name: 'Bauausschuss', shortName: 'BA', description: 'Entscheidungen zu Bauprojekten und Stadtplanung', created_at: '2024-01-15T13:00:00Z', updated_at: '2024-01-15T13:00:00Z' },
-    { id: '4', name: 'Sozialausschuss', shortName: 'SA', description: 'Soziale Angelegenheiten und Wohlfahrt', created_at: '2024-02-01T15:30:00Z', updated_at: '2024-02-01T15:30:00Z' },
-    { id: '5', name: 'Kulturausschuss', shortName: 'KA', description: 'Kulturelle Angelegenheiten und Veranstaltungen', created_at: '2024-02-05T09:45:00Z', updated_at: '2024-02-05T09:45:00Z' },
-    { id: '6', name: 'Umweltausschuss', shortName: 'UA', description: 'Umweltschutz und Klimaschutzmaßnahmen', created_at: '2024-02-10T14:20:00Z', updated_at: '2024-02-10T14:20:00Z' },
-]
+function mapCommitteeDtoToCommittee(dto: CommitteeDto): Committee {
+    return {
+        id: dto.id,
+        name: dto.name,
+        shortName: dto.shortName,
+        description: dto.description,
+        created_at: dto.createdAt,
+        updated_at: dto.updatedAt
+    }
+}
 
 const mockDepartments: Department[] = [
     { id: '1', name: 'Zentrale Dienste', shortName: 'FD 10', description: 'Organisation, Personal, IT-Services', created_at: '2024-01-08T09:00:00Z', updated_at: '2024-01-08T09:00:00Z' },
@@ -62,7 +65,7 @@ const mockDepartments: Department[] = [
 
 export const useManagementStore = defineStore('management', () => {
     const topics = ref<Topic[]>([])
-    const committees = ref<Committee[]>([...mockCommittees])
+    const committees = ref<Committee[]>([])
     const departments = ref<Department[]>([...mockDepartments])
     const loading = ref(false)
     const error = ref<string | null>(null)
@@ -136,8 +139,16 @@ export const useManagementStore = defineStore('management', () => {
     async function loadCommittees() {
         loading.value = true
         error.value = null
-        await new Promise(resolve => setTimeout(resolve, 300))
-        loading.value = false
+        try {
+            const committeeDto = await CommitteesApi.getAll()
+            committees.value = committeeDto.map(mapCommitteeDtoToCommittee)
+            committees.value.sort((a, b) => a.name.localeCompare(b.name))
+        } catch (err) {
+            error.value = err instanceof Error ? err.message : 'Fehler beim Laden der Gremien'
+            console.error('Error loading committee:', err)
+        } finally {
+            loading.value = false
+        }
     }
 
     async function addCommittee(name: string, shortName: string, description?: string) {
