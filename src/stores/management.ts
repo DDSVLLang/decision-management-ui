@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { TopicsApi, type TopicDto } from '../lib/topicsApi'
 
 export interface Topic {
     id: string
@@ -29,15 +30,15 @@ export interface Department {
 
 const generateId = () => Math.random().toString(36).substring(2, 9)
 
-const mockTopics: Topic[] = [
-    { id: '1', name: 'Radverkehrskonzept', description: 'Ausbau und Förderung des Radverkehrs in der Stadt', created_at: '2024-01-15T10:00:00Z', updated_at: '2024-01-15T10:00:00Z' },
-    { id: '2', name: 'Straßenbahn', description: 'Planung und Umsetzung neuer Straßenbahnlinien', created_at: '2024-01-20T14:30:00Z', updated_at: '2024-01-20T14:30:00Z' },
-    { id: '3', name: 'Verwaltung', description: 'Organisatorische und verwaltungstechnische Angelegenheiten', created_at: '2024-02-05T09:15:00Z', updated_at: '2024-02-05T09:15:00Z' },
-    { id: '4', name: 'Umweltschutz', description: 'Maßnahmen zum Schutz der Umwelt und Klimaschutzprojekte', created_at: '2024-02-10T11:45:00Z', updated_at: '2024-02-10T11:45:00Z' },
-    { id: '5', name: 'Stadtentwicklung', description: 'Strategische Entwicklung und Zukunftsplanung der Stadt', created_at: '2024-02-15T14:20:00Z', updated_at: '2024-02-15T14:20:00Z' },
-    { id: '6', name: 'Digitalisierung', description: 'Digitale Transformation der Stadtverwaltung', created_at: '2024-02-20T10:30:00Z', updated_at: '2024-02-20T10:30:00Z' },
-    { id: '7', name: 'Soziales', description: 'Soziale Angelegenheiten und Unterstützungsleistungen', created_at: '2024-02-25T13:15:00Z', updated_at: '2024-02-25T13:15:00Z' },
-]
+function mapTopicDtoToTopic(dto: TopicDto): Topic {
+    return {
+        id: dto.id,
+        name: dto.name,
+        description: dto.description,
+        created_at: dto.createdAt,
+        updated_at: dto.updatedAt
+    }
+}
 
 const mockCommittees: Committee[] = [
     { id: '1', name: 'Stadtverordnetenversammlung', shortName: 'STVV', description: 'Hauptorgan der kommunalen Selbstverwaltung', created_at: '2024-01-10T08:00:00Z', updated_at: '2024-01-10T08:00:00Z' },
@@ -60,7 +61,7 @@ const mockDepartments: Department[] = [
 ]
 
 export const useManagementStore = defineStore('management', () => {
-    const topics = ref<Topic[]>([...mockTopics])
+    const topics = ref<Topic[]>([])
     const committees = ref<Committee[]>([...mockCommittees])
     const departments = ref<Department[]>([...mockDepartments])
     const loading = ref(false)
@@ -69,27 +70,29 @@ export const useManagementStore = defineStore('management', () => {
     async function loadTopics() {
         loading.value = true
         error.value = null
-        await new Promise(resolve => setTimeout(resolve, 300))
-        loading.value = false
+        try {
+            const topicsDto = await TopicsApi.getAll()
+            topics.value = topicsDto.map(mapTopicDtoToTopic)
+            topics.value.sort((a, b) => a.name.localeCompare(b.name))
+        } catch (err) {
+            error.value = err instanceof Error ? err.message : 'Fehler beim Laden der Themen'
+            console.error('Error loading topics:', err)
+        } finally {
+            loading.value = false
+        }
     }
 
     async function addTopic(name: string, description?: string) {
         loading.value = true
         error.value = null
         try {
-            await new Promise(resolve => setTimeout(resolve, 300))
-            const newTopic: Topic = {
-                id: generateId(),
-                name,
-                description,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            }
+            const topicDto = await TopicsApi.create({ name, description })
+            const newTopic = mapTopicDtoToTopic(topicDto)
             topics.value.push(newTopic)
             topics.value.sort((a, b) => a.name.localeCompare(b.name))
             return newTopic
         } catch (err) {
-            error.value = err instanceof Error ? err.message : 'Failed to add topic'
+            error.value = err instanceof Error ? err.message : 'Fehler beim Hinzufügen des Themas'
             throw err
         } finally {
             loading.value = false
@@ -100,20 +103,16 @@ export const useManagementStore = defineStore('management', () => {
         loading.value = true
         error.value = null
         try {
-            await new Promise(resolve => setTimeout(resolve, 300))
+            const topicDto = await TopicsApi.update(id, { name, description })
+            const updatedTopic = mapTopicDtoToTopic(topicDto)
             const index = topics.value.findIndex(t => t.id === id)
             if (index !== -1) {
-                topics.value[index] = {
-                    ...topics.value[index],
-                    name,
-                    description,
-                    updated_at: new Date().toISOString()
-                }
+                topics.value[index] = updatedTopic
                 topics.value.sort((a, b) => a.name.localeCompare(b.name))
-                return topics.value[index]
             }
+            return updatedTopic
         } catch (err) {
-            error.value = err instanceof Error ? err.message : 'Failed to update topic'
+            error.value = err instanceof Error ? err.message : 'Fehler beim Aktualisieren des Themas'
             throw err
         } finally {
             loading.value = false
@@ -124,10 +123,10 @@ export const useManagementStore = defineStore('management', () => {
         loading.value = true
         error.value = null
         try {
-            await new Promise(resolve => setTimeout(resolve, 300))
+            await TopicsApi.delete(id)
             topics.value = topics.value.filter(t => t.id !== id)
         } catch (err) {
-            error.value = err instanceof Error ? err.message : 'Failed to delete topic'
+            error.value = err instanceof Error ? err.message : 'Fehler beim Löschen des Themas'
             throw err
         } finally {
             loading.value = false
