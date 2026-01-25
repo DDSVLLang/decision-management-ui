@@ -22,7 +22,7 @@
             <ArrowLeftIcon class="h-5 w-5 mr-2" />
             Zurück
           </button>
-          <h2 class="text-2xl font-bold text-gray-900">Beschluss #{{ decision.id }}</h2>
+          <h3 class="text-2xl font-normal tracking-[0.08em] text-gray-600">Beschluss #{{ decision.id }}</h3>
           <StatusBadge :status="decision.status" />
         </div>
         <div class="flex items-center space-x-3">

@@ -14,7 +14,7 @@
       <div class="max-w-4xl">
         <div class="bg-white rounded-lg shadow overflow-hidden">
           <div class="px-6 py-5 border-b border-gray-200">
-            <h2 class="text-2xl font-bold text-gray-900">
+            <h2 class="text-2xl font-normal tracking-[0.08em] text-gray-600">
               {{ isEdit ? 'Beschluss bearbeiten' : 'Neuer Beschluss' }}
             </h2>
           </div>

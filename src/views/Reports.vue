@@ -2,8 +2,8 @@
   <AppLayout>
     <div class="p-6">
       <div class="mb-8">
-        <h2 class="text-2xl font-bold text-gray-900">Berichte</h2>
-        <p class="text-gray-600 mt-1">Berichte über nicht abgeschlossene Beschlüsse</p>
+        <h3 class="text-2xl font-normal tracking-[0.08em] text-gray-600">Berichte</h3>
+        <p class="mt-1 text-sm text-[#8a8578]">Berichte über nicht abgeschlossene Beschlüsse</p>
       </div>
 
       <!-- Report Header -->

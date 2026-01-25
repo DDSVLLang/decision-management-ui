@@ -3,7 +3,7 @@
     <div class="p-6">
       <div class="mb-8 flex items-center justify-between">
         <div>
-          <h2 class="text-2xl font-bold text-gray-900">Benutzer</h2>
+          <h3 class="text-2xl font-normal tracking-[0.08em] text-gray-600">Benutzer</h3>
         </div>
         <router-link
             to="/users/new"

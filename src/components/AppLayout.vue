@@ -34,7 +34,7 @@
             <router-link
                 to="/"
                 class="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 group"
-                :class="$route.name === 'decisions' ? 'bg-red-100 text-red-700' : 'text-gray-700 hover:bg-gray-100'"
+                :class="$route.name === 'decisions' ? 'bg-red-100 text-red-700' : 'text-gray-600 hover:bg-gray-100'"
             >
               <DocumentTextIcon class="h-5 w-5 flex-shrink-0" :class="isCollapsed ? 'mx-auto' : 'mr-3'" />
               <span v-if="!isCollapsed">Beschlüsse</span>
@@ -46,7 +46,7 @@
             <router-link
                 to="/reports"
                 class="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 group"
-                :class="$route.name === 'reports' ? 'bg-red-100 text-red-700' : 'text-gray-700 hover:bg-gray-100'"
+                :class="$route.name === 'reports' ? 'bg-red-100 text-red-700' : 'text-gray-600 hover:bg-gray-100'"
             >
               <ChartBarIcon class="h-5 w-5 flex-shrink-0" :class="isCollapsed ? 'mx-auto' : 'mr-3'" />
               <span v-if="!isCollapsed">Berichte</span>
@@ -59,7 +59,7 @@
                 v-if="authStore.isAdmin"
                 to="/users"
                 class="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 group"
-                :class="$route.path.startsWith('/users') ? 'bg-red-100 text-red-700' : 'text-gray-700 hover:bg-gray-100'"
+                :class="$route.path.startsWith('/users') ? 'bg-red-100 text-red-700' : 'text-gray-600 hover:bg-gray-100'"
             >
               <UsersIcon class="h-5 w-5 flex-shrink-0" :class="isCollapsed ? 'mx-auto' : 'mr-3'" />
               <span v-if="!isCollapsed">Benutzer</span>
@@ -72,7 +72,7 @@
                 v-if="authStore.isAdmin"
                 to="/management"
                 class="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 group"
-                :class="$route.path.startsWith('/management') ? 'bg-red-100 text-red-700' : 'text-gray-700 hover:bg-gray-100'"
+                :class="$route.path.startsWith('/management') ? 'bg-red-100 text-red-700' : 'text-gray-600 hover:bg-gray-100'"
             >
               <CogIcon class="h-5 w-5 flex-shrink-0" :class="isCollapsed ? 'mx-auto' : 'mr-3'" />
               <span v-if="!isCollapsed">Verwaltung</span>

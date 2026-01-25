@@ -9,7 +9,7 @@
               class="h-36 w-auto"
           />
         </div>
-        <h3 class="text-2xl font-normal mb-2 uppercase tracking-[0.25em] text-[#8a8578]">Beschlussüberwachung</h3>
+        <h3 class="text-3xl font-normal mb-2 uppercase tracking-[0.08em] text-[#8a8578]">Beschlussüberwachung</h3>
       </div>
 
       <div class="bg-white rounded-lg shadow-lg p-8">
