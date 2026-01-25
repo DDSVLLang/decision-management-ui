@@ -39,6 +39,9 @@
               Name
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Beschreibung
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Erstellt am
             </th>
             <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -50,6 +53,9 @@
           <tr v-for="topic in store.topics" :key="topic.id" class="hover:bg-gray-50">
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
               {{ topic.name }}
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-500">
+              {{ topic.description || '-' }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
               {{ formatDate(topic.created_at) }}
@@ -98,21 +104,38 @@
                   leave-from="opacity-100 scale-100"
                   leave-to="opacity-0 scale-95"
               >
-                <DialogPanel class="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+                <DialogPanel class="w-full max-w-lg transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
                   <DialogTitle as="h3" class="text-lg font-medium leading-6 text-gray-900">
                     {{ dialogMode === 'add' ? 'Neues Thema hinzufügen' : 'Thema bearbeiten' }}
                   </DialogTitle>
-                  <div class="mt-4">
-                    <input
-                        v-model="formName"
-                        type="text"
-                        placeholder="Thema Name"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                        @keyup.enter="saveItem"
-                    />
+
+                  <div class="mt-4 space-y-4">
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Name <span class="text-red-500">*</span>
+                      </label>
+                      <input
+                          v-model="formName"
+                          type="text"
+                          placeholder="z.B. Radverkehrskonzept"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Beschreibung
+                      </label>
+                      <textarea
+                          v-model="formDescription"
+                          rows="3"
+                          placeholder="z.B. Ausbau und Förderung des Radverkehrs in der Stadt"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                      ></textarea>
+                    </div>
                   </div>
 
-                  <div class="mt-4 flex justify-end space-x-2">
+                  <div class="mt-6 flex justify-end space-x-2">
                     <button
                         type="button"
                         class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
@@ -122,7 +145,7 @@
                     </button>
                     <button
                         type="button"
-                        class="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
+                        class="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         @click="saveItem"
                         :disabled="!formName.trim()"
                     >
@@ -210,6 +233,7 @@ const showDialog = ref(false)
 const showDeleteDialog = ref(false)
 const dialogMode = ref<'add' | 'edit'>('add')
 const formName = ref('')
+const formDescription = ref('')
 const editingItem = ref<Topic | null>(null)
 const itemToDelete = ref<Topic | null>(null)
 
@@ -224,6 +248,7 @@ function formatDate(dateString: string): string {
 function openAddDialog() {
   dialogMode.value = 'add'
   formName.value = ''
+  formDescription.value = ''
   editingItem.value = null
   showDialog.value = true
 }
@@ -231,6 +256,7 @@ function openAddDialog() {
 function openEditDialog(topic: Topic) {
   dialogMode.value = 'edit'
   formName.value = topic.name
+  formDescription.value = topic.description || ''
   editingItem.value = topic
   showDialog.value = true
 }
@@ -238,6 +264,7 @@ function openEditDialog(topic: Topic) {
 function closeDialog() {
   showDialog.value = false
   formName.value = ''
+  formDescription.value = ''
   editingItem.value = null
 }
 
@@ -246,9 +273,16 @@ async function saveItem() {
 
   try {
     if (dialogMode.value === 'add') {
-      await store.addTopic(formName.value.trim())
+      await store.addTopic(
+          formName.value.trim(),
+          formDescription.value.trim() || undefined
+      )
     } else if (editingItem.value) {
-      await store.updateTopic(editingItem.value.id, formName.value.trim())
+      await store.updateTopic(
+          editingItem.value.id,
+          formName.value.trim(),
+          formDescription.value.trim() || undefined
+      )
     }
     closeDialog()
   } catch (error) {
