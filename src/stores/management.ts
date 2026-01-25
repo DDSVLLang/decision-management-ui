@@ -155,20 +155,13 @@ export const useManagementStore = defineStore('management', () => {
         loading.value = true
         error.value = null
         try {
-            await new Promise(resolve => setTimeout(resolve, 300))
-            const newCommittee: Committee = {
-                id: generateId(),
-                name,
-                shortName,
-                description,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            }
+            const committeeDto = await CommitteesApi.create({ name, shortName, description })
+            const newCommittee = mapCommitteeDtoToCommittee(committeeDto)
             committees.value.push(newCommittee)
             committees.value.sort((a, b) => a.name.localeCompare(b.name))
             return newCommittee
         } catch (err) {
-            error.value = err instanceof Error ? err.message : 'Failed to add committee'
+            error.value = err instanceof Error ? err.message : 'Fehler beim Hinzufügen des Gremiums'
             throw err
         } finally {
             loading.value = false
@@ -179,21 +172,16 @@ export const useManagementStore = defineStore('management', () => {
         loading.value = true
         error.value = null
         try {
-            await new Promise(resolve => setTimeout(resolve, 300))
-            const index = committees.value.findIndex(c => c.id === id)
+            const committeeDto = await CommitteesApi.update(id, { name, shortName, description })
+            const updatedCommittee = mapCommitteeDtoToCommittee(committeeDto)
+            const index = committees.value.findIndex(t => t.id === id)
             if (index !== -1) {
-                committees.value[index] = {
-                    ...committees.value[index],
-                    name,
-                    shortName,
-                    description,
-                    updated_at: new Date().toISOString()
-                }
+                committees.value[index] = updatedCommittee
                 committees.value.sort((a, b) => a.name.localeCompare(b.name))
-                return committees.value[index]
             }
+            return updatedCommittee
         } catch (err) {
-            error.value = err instanceof Error ? err.message : 'Failed to update committee'
+            error.value = err instanceof Error ? err.message : 'Fehler beim Aktualisieren des Gremiums'
             throw err
         } finally {
             loading.value = false
@@ -204,10 +192,10 @@ export const useManagementStore = defineStore('management', () => {
         loading.value = true
         error.value = null
         try {
-            await new Promise(resolve => setTimeout(resolve, 300))
-            committees.value = committees.value.filter(c => c.id !== id)
+            await CommitteesApi.delete(id)
+            committees.value = committees.value.filter(t => t.id !== id)
         } catch (err) {
-            error.value = err instanceof Error ? err.message : 'Failed to delete committee'
+            error.value = err instanceof Error ? err.message : 'Fehler beim Löschen des Gremiums'
             throw err
         } finally {
             loading.value = false
