@@ -14,7 +14,7 @@
       <div class="max-w-4xl">
         <div class="bg-white rounded-lg shadow overflow-hidden">
           <div class="px-6 py-5 border-b border-gray-200">
-            <h2 class="text-2xl font-normal tracking-[0.08em] text-gray-600">
+            <h2 class="text-2xl font-bold text-gray-900">
               {{ isEdit ? 'Beschluss bearbeiten' : 'Neuer Beschluss' }}
             </h2>
           </div>
@@ -56,18 +56,74 @@
                 />
               </div>
 
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Zuständiger Fachbereich*</label>
-                <select
-                    v-model="form.responsibleDepartment"
-                    required
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                >
-                  <option value="">Bitte wählen</option>
-                  <option v-for="dept in departments" :key="dept" :value="dept">
-                    {{ dept }}
-                  </option>
-                </select>
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Zuständige Fachbereiche* (mindestens einen auswählen)</label>
+                <Listbox v-model="form.responsibleDepartments" multiple>
+                  <div class="relative">
+                    <ListboxButton
+                        class="relative w-full cursor-pointer rounded-md bg-white py-2 pl-3 pr-10 text-left border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    >
+                      <span v-if="form.responsibleDepartments.length === 0" class="block truncate text-gray-400">
+                        Fachbereiche auswählen...
+                      </span>
+                      <span v-else class="flex flex-wrap gap-1">
+                        <span
+                            v-for="dept in form.responsibleDepartments"
+                            :key="dept"
+                            class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary-100 text-primary-800"
+                        >
+                          {{ dept }}
+                        </span>
+                      </span>
+                      <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                        <ChevronUpDownIcon class="h-5 w-5 text-gray-400" aria-hidden="true" />
+                      </span>
+                    </ListboxButton>
+
+                    <transition
+                        leave-active-class="transition duration-100 ease-in"
+                        leave-from-class="opacity-100"
+                        leave-to-class="opacity-0"
+                    >
+                      <ListboxOptions
+                          class="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+                      >
+                        <ListboxOption
+                            v-for="dept in departments"
+                            :key="dept"
+                            :value="dept"
+                            v-slot="{ active, selected }"
+                            as="template"
+                        >
+                          <li
+                              :class="[
+                                active ? 'bg-primary-100 text-primary-900' : 'text-gray-900',
+                                'relative cursor-pointer select-none py-2 pl-10 pr-4'
+                              ]"
+                          >
+                            <span
+                                :class="[
+                                  selected ? 'font-medium' : 'font-normal',
+                                  'block truncate'
+                                ]"
+                            >
+                              {{ dept }}
+                            </span>
+                            <span
+                                v-if="selected"
+                                class="absolute inset-y-0 left-0 flex items-center pl-3 text-primary-600"
+                            >
+                              <CheckIcon class="h-5 w-5" aria-hidden="true" />
+                            </span>
+                          </li>
+                        </ListboxOption>
+                      </ListboxOptions>
+                    </transition>
+                  </div>
+                </Listbox>
+                <p v-if="form.responsibleDepartments.length === 0" class="mt-1 text-sm text-red-600">
+                  Bitte mindestens einen Fachbereich auswählen
+                </p>
               </div>
 
               <div class="md:col-span-2">
@@ -159,7 +215,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useDecisionStore } from '../stores/decisions'
 import AppLayout from '../components/AppLayout.vue'
-import { ArrowLeftIcon } from '@heroicons/vue/24/outline'
+import { ArrowLeftIcon, CheckIcon, ChevronUpDownIcon } from '@heroicons/vue/24/outline'
+import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -185,6 +242,7 @@ const form = ref({
   decisionDate: '',
   printMatter: '',
   responsibleDepartment: '',
+  responsibleDepartments: [] as string[],
   topic: '',
   content: '',
   dueDate: '',
@@ -205,6 +263,11 @@ async function saveDecision() {
     return
   }
 
+  if (form.value.responsibleDepartments.length === 0) {
+    errorMessage.value = 'Bitte mindestens einen Fachbereich auswählen.'
+    return
+  }
+
   loading.value = true
   errorMessage.value = ''
 
@@ -216,7 +279,8 @@ async function saveDecision() {
       decisionBody: form.value.decisionBody,
       decisionDate: form.value.decisionDate,
       printMatter: form.value.printMatter,
-      responsibleDepartment: form.value.responsibleDepartment,
+      responsibleDepartment: form.value.responsibleDepartments[0],
+      responsibleDepartments: form.value.responsibleDepartments,
       topic: form.value.topic,
       content: form.value.content,
       dueDate: form.value.dueDate || undefined,
@@ -251,6 +315,7 @@ onMounted(() => {
       decisionDate: decision.value.decisionDate,
       printMatter: decision.value.printMatter,
       responsibleDepartment: decision.value.responsibleDepartment,
+      responsibleDepartments: decision.value.responsibleDepartments || [decision.value.responsibleDepartment],
       topic: decision.value.topic,
       content: decision.value.content,
       dueDate: decision.value.dueDate || '',

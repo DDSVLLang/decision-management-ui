@@ -3,7 +3,7 @@
     <div class="p-6">
       <div class="mb-8 flex items-center justify-between">
         <div>
-          <h3 class="text-2xl font-normal tracking-[0.08em] text-gray-600">Beschlüsse</h3>
+          <h2 class="text-2xl font-bold text-gray-900">Beschlüsse</h2>
         </div>
         <router-link
             v-if="authStore.isAdmin"
@@ -100,7 +100,7 @@
                 Status
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Fachbereich
+                Fachbereiche
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Aktionen
@@ -135,8 +135,19 @@
               <td class="px-6 py-4 whitespace-nowrap">
                 <StatusBadge :status="decision.status" />
               </td>
-              <td :class="['px-6 py-4 whitespace-nowrap text-sm', decision.deleted ? 'text-gray-400' : 'text-gray-900']">
-                {{ decision.responsibleDepartment }}
+              <td class="px-6 py-4">
+                <div class="flex flex-wrap gap-1">
+                  <span
+                      v-for="dept in decision.responsibleDepartments"
+                      :key="dept"
+                      :class="[
+                        'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium',
+                        decision.deleted ? 'bg-gray-200 text-gray-500' : 'bg-primary-100 text-primary-800'
+                      ]"
+                  >
+                    {{ dept }}
+                  </span>
+                </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 <div v-if="authStore.isAdmin && !decision.deleted" class="flex space-x-2">
@@ -261,8 +272,9 @@ const filteredDecisions = computed(() => {
     filtered = filtered.filter(d => !d.deleted)
 
     // Users can only see decisions from their own department
-    if (authStore.user?.responsibleDepartment) {
-      filtered = filtered.filter(d => d.responsibleDepartment === authStore.user!.responsibleDepartment)
+    const userDepartment = authStore.user?.responsibleDepartment
+    if (userDepartment) {
+      filtered = filtered.filter(d => d.responsibleDepartments.includes(userDepartment))
     }
   }
 
@@ -283,7 +295,7 @@ const filteredDecisions = computed(() => {
   }
 
   if (departmentFilter.value) {
-    filtered = filtered.filter(d => d.responsibleDepartment === departmentFilter.value)
+    filtered = filtered.filter(d => d.responsibleDepartments.includes(departmentFilter.value))
   }
 
   if (topicFilter.value) {
