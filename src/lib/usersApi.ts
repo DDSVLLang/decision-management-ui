@@ -37,6 +37,15 @@ export interface CreateUserDto {
     departmentId?: string
 }
 
+export interface UpdateUserDto {
+    email: string
+    password?: string
+    firstName: string
+    lastName: string
+    role: 'USER' | 'ADMIN'
+    departmentId?: string
+}
+
 export interface CreateUserResponse {
     success: boolean
     message: string
@@ -46,6 +55,13 @@ export interface CreateUserResponse {
         expiresIn: number
         user: UserDto
     }
+    timestamp: string
+}
+
+export interface UpdateUserResponse {
+    success: boolean
+    message: string
+    data: UserDto
     timestamp: string
 }
 
@@ -86,6 +102,57 @@ export class UsersApi {
                         const validationMessages = Object.values(errorData.validationErrors).join(', ')
                         throw new Error(validationMessages)
                     }
+                    if (errorData.message) {
+                        throw new Error(errorData.message)
+                    }
+                } catch (parseError) {
+                    if (parseError instanceof Error && parseError.message !== error.message) {
+                        throw parseError
+                    }
+                }
+            }
+
+            throw error
+        }
+    }
+
+    static async updateUser(id: string, data: UpdateUserDto): Promise<UserDto> {
+        try {
+            const response = await api.put<UpdateUserResponse>(`/api/v1/management/user/${id}`, data)
+            return response.data
+        } catch (error: any) {
+            console.error('Error updating user:', error)
+
+            if (error.message && error.message.includes('{')) {
+                try {
+                    const errorData = JSON.parse(error.message.substring(error.message.indexOf('{')))
+                    if (errorData.validationErrors) {
+                        const validationMessages = Object.values(errorData.validationErrors).join(', ')
+                        throw new Error(validationMessages)
+                    }
+                    if (errorData.message) {
+                        throw new Error(errorData.message)
+                    }
+                } catch (parseError) {
+                    if (parseError instanceof Error && parseError.message !== error.message) {
+                        throw parseError
+                    }
+                }
+            }
+
+            throw error
+        }
+    }
+
+    static async deleteUser(id: string): Promise<void> {
+        try {
+            await api.delete(`/api/v1/management/user/${id}`)
+        } catch (error: any) {
+            console.error('Error deleting user:', error)
+
+            if (error.message && error.message.includes('{')) {
+                try {
+                    const errorData = JSON.parse(error.message.substring(error.message.indexOf('{')))
                     if (errorData.message) {
                         throw new Error(errorData.message)
                     }

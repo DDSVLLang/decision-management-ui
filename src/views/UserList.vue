@@ -91,7 +91,7 @@
                     <PencilIcon class="h-4 w-4" />
                   </button>
                   <button
-                      @click="deleteUser(user.id)"
+                      @click="openDeleteDialog(user.id)"
                       class="text-error-600 hover:text-error-700"
                       :disabled="user.id === authStore.user?.id"
                       :class="{ 'opacity-50 cursor-not-allowed': user.id === authStore.user?.id }"
@@ -109,36 +109,127 @@
           Keine Benutzer gefunden.
         </div>
       </div>
+
+      <TransitionRoot appear :show="showDeleteDialog" as="template">
+        <Dialog as="div" @close="closeDeleteDialog" class="relative z-50">
+          <TransitionChild
+              as="template"
+              enter="duration-300 ease-out"
+              enter-from="opacity-0"
+              enter-to="opacity-100"
+              leave="duration-200 ease-in"
+              leave-from="opacity-100"
+              leave-to="opacity-0"
+          >
+            <div class="fixed inset-0 bg-black bg-opacity-25" />
+          </TransitionChild>
+
+          <div class="fixed inset-0 overflow-y-auto">
+            <div class="flex min-h-full items-center justify-center p-4 text-center">
+              <TransitionChild
+                  as="template"
+                  enter="duration-300 ease-out"
+                  enter-from="opacity-0 scale-95"
+                  enter-to="opacity-100 scale-100"
+                  leave="duration-200 ease-in"
+                  leave-from="opacity-100 scale-100"
+                  leave-to="opacity-0 scale-95"
+              >
+                <DialogPanel class="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+                  <DialogTitle as="h3" class="text-lg font-medium leading-6 text-gray-900">
+                    Benutzer löschen
+                  </DialogTitle>
+                  <div class="mt-2">
+                    <p class="text-sm text-gray-500">
+                      Sind Sie sicher, dass Sie "{{ userToDelete?.firstName }} {{ userToDelete?.lastName }}" löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.
+                    </p>
+                  </div>
+
+                  <div v-if="deleteError" class="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
+                    <p class="text-sm text-red-800">{{ deleteError }}</p>
+                  </div>
+
+                  <div class="mt-4 flex justify-end space-x-2">
+                    <button
+                        type="button"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                        @click="closeDeleteDialog"
+                    >
+                      Abbrechen
+                    </button>
+                    <button
+                        type="button"
+                        class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
+                        @click="confirmDelete"
+                    >
+                      Löschen
+                    </button>
+                  </div>
+                </DialogPanel>
+              </TransitionChild>
+            </div>
+          </div>
+        </Dialog>
+      </TransitionRoot>
     </div>
   </AppLayout>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useUsersStore } from '../stores/users'
+import { UsersApi } from '../lib/usersApi'
 import AppLayout from '../components/AppLayout.vue'
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/vue/24/outline'
+import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue'
 
 const authStore = useAuthStore()
 const usersStore = useUsersStore()
+
+const showDeleteDialog = ref(false)
+const userToDelete = ref<{ id: string; firstName: string; lastName: string } | null>(null)
+const deleteError = ref('')
 
 onMounted(() => {
   usersStore.fetchUsers()
 })
 
-async function deleteUser(userId: string) {
+function openDeleteDialog(userId: string) {
   if (userId === authStore.user?.id) {
-    alert('Sie können sich nicht selbst löschen.')
+    deleteError.value = 'Sie können sich nicht selbst löschen.'
     return
   }
 
   const user = usersStore.users.find(u => u.id === userId)
-  if (!confirm(`Möchten Sie den Benutzer "${user?.firstName} ${user?.lastName}" wirklich löschen?`)) {
-    return
+  if (user) {
+    userToDelete.value = {
+      id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName
+    }
+    deleteError.value = ''
+    showDeleteDialog.value = true
   }
+}
 
-  alert('Löschen ist noch nicht implementiert')
+function closeDeleteDialog() {
+  showDeleteDialog.value = false
+  userToDelete.value = null
+  deleteError.value = ''
+}
+
+async function confirmDelete() {
+  if (!userToDelete.value) return
+
+  try {
+    await UsersApi.deleteUser(userToDelete.value.id)
+    await usersStore.fetchUsers()
+    closeDeleteDialog()
+  } catch (error: any) {
+    console.error('Error deleting user:', error)
+    deleteError.value = error.message || 'Fehler beim Löschen des Benutzers'
+  }
 }
 
 function formatDate(dateString: string): string {

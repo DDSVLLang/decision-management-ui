@@ -55,15 +55,17 @@
               />
             </div>
 
-            <div v-if="!isEdit">
-              <label class="block text-sm font-medium text-gray-700 mb-1">Passwort*</label>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">
+                Passwort{{ isEdit ? '' : '*' }}
+              </label>
               <div class="flex space-x-2">
                 <input
                     v-model="form.password"
                     type="text"
-                    required
+                    :required="!isEdit"
                     class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    placeholder="Passwort"
+                    :placeholder="isEdit ? 'Leer lassen, um Passwort beizubehalten' : 'Passwort'"
                 />
                 <button
                     type="button"
@@ -74,7 +76,7 @@
                 </button>
               </div>
               <p class="mt-1 text-xs text-gray-500">
-                Das generierte Passwort wird dem Benutzer zur Verfügung gestellt.
+                {{ isEdit ? 'Nur ausfüllen, wenn das Passwort geändert werden soll' : 'Das generierte Passwort wird dem Benutzer zur Verfügung gestellt.' }}
               </p>
             </div>
 
@@ -135,7 +137,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useUsersStore } from '../stores/users'
-import { UsersApi, type CreateUserDto } from '../lib/usersApi'
+import { UsersApi, type CreateUserDto, type UpdateUserDto } from '../lib/usersApi'
 import { DepartmentsApi, type DepartmentDto } from '../lib/departmentsApi'
 import AppLayout from '../components/AppLayout.vue'
 import { ArrowLeftIcon } from '@heroicons/vue/24/outline'
@@ -188,25 +190,39 @@ async function saveUser() {
 
   try {
     if (isEdit.value) {
-      errorMessage.value = 'Bearbeiten ist noch nicht implementiert'
-      loading.value = false
-      return
+      const updateData: UpdateUserDto = {
+        email: form.value.email,
+        firstName: form.value.firstName,
+        lastName: form.value.lastName,
+        role: form.value.role === 'admin' ? 'ADMIN' : 'USER',
+        ...(form.value.departmentId && { departmentId: form.value.departmentId })
+      }
+
+      if (form.value.password) {
+        updateData.password = form.value.password
+      }
+
+      const updatedUser = await UsersApi.updateUser(userId.value, updateData)
+
+      await usersStore.fetchUsers()
+
+      router.push(`/users/${updatedUser.id}`)
+    } else {
+      const createData: CreateUserDto = {
+        email: form.value.email,
+        password: form.value.password,
+        firstName: form.value.firstName,
+        lastName: form.value.lastName,
+        role: form.value.role === 'admin' ? 'ADMIN' : 'USER',
+        ...(form.value.departmentId && { departmentId: form.value.departmentId })
+      }
+
+      const createdUser = await UsersApi.createUser(createData)
+
+      await usersStore.fetchUsers()
+
+      router.push(`/users/${createdUser.id}`)
     }
-
-    const createData: CreateUserDto = {
-      email: form.value.email,
-      password: form.value.password,
-      firstName: form.value.firstName,
-      lastName: form.value.lastName,
-      role: form.value.role === 'admin' ? 'ADMIN' : 'USER',
-      ...(form.value.departmentId && { departmentId: form.value.departmentId })
-    }
-
-    const createdUser = await UsersApi.createUser(createData)
-
-    await usersStore.fetchUsers()
-
-    router.push(`/users/${createdUser.id}`)
   } catch (error: any) {
     console.error('Error saving user:', error)
     errorMessage.value = error.message || 'Ein Fehler ist aufgetreten'
