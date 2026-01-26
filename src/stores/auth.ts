@@ -1,6 +1,30 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { mockAuth, type User } from '../lib/mockAuth'
+import { AuthApi, type UserDto } from '../lib/authApi'
+
+export interface User {
+    id: string
+    email: string
+    firstName: string
+    lastName: string
+    fullName: string
+    role: string
+    department?: string | null
+    responsibleDepartment?: string | null
+}
+
+function mapUserDtoToUser(dto: UserDto): User {
+    return {
+        id: dto.id,
+        email: dto.email,
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        fullName: dto.fullName,
+        role: dto.role,
+        department: dto.department,
+        responsibleDepartment: dto.responsibleDepartment
+    }
+}
 
 export const useAuthStore = defineStore('auth', () => {
     const user = ref<User | null>(null)
@@ -13,32 +37,42 @@ export const useAuthStore = defineStore('auth', () => {
     async function initialize() {
         loading.value = true
         try {
-            const { user: currentUser } = mockAuth.getSession()
-            user.value = currentUser
-
-            mockAuth.onAuthStateChange((newUser) => {
-                user.value = newUser
-            })
+            if (AuthApi.hasValidSession()) {
+                const userDto = AuthApi.getUser()
+                if (userDto) {
+                    user.value = mapUserDtoToUser(userDto)
+                }
+            }
         } catch (error) {
             console.error('Error initializing auth:', error)
+            AuthApi.clearSession()
+            user.value = null
         } finally {
             loading.value = false
         }
     }
 
     async function signIn(email: string, password: string) {
-        const { user: authUser, error } = await mockAuth.signIn(email, password)
-
-        if (error) throw error
-        user.value = authUser
-        return { user: authUser }
+        try {
+            const response = await AuthApi.login({ email, password })
+            const authUser = mapUserDtoToUser(response.user)
+            user.value = authUser
+            return { user: authUser }
+        } catch (error) {
+            console.error('Sign in error:', error)
+            throw error
+        }
     }
 
 
     async function signOut() {
-        const { error } = await mockAuth.signOut()
-        if (error) throw error
-        user.value = null
+        try {
+            AuthApi.clearSession()
+            user.value = null
+        } catch (error) {
+            console.error('Sign out error:', error)
+            throw error
+        }
     }
 
     return {

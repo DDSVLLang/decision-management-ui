@@ -1,5 +1,6 @@
+import { AuthApi } from './authApi'
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
-const API_KEY = import.meta.env.VITE_API_KEY || ''
 
 interface ApiRequestOptions {
     method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
@@ -10,11 +11,13 @@ interface ApiRequestOptions {
 async function apiRequest<T>(endpoint: string, options: ApiRequestOptions = {}): Promise<T> {
     const { method = 'GET', body, headers = {} } = options
 
+    const token = AuthApi.getToken()
+
     const config: RequestInit = {
         method,
         headers: {
             'Content-Type': 'application/json',
-            ...(API_KEY && { 'Authorization': `Bearer ${API_KEY}` }),
+            ...(token && { 'Authorization': `Bearer ${token}` }),
             ...headers,
         },
     }
