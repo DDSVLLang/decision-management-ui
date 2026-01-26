@@ -58,7 +58,7 @@
               {{ department.name }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-              {{ department.shortName }}
+              {{ department.shortName || '-' }}
             </td>
             <td class="px-6 py-4 text-sm text-gray-500">
               {{ department.description || '-' }}
@@ -276,7 +276,7 @@ function openAddDialog() {
 function openEditDialog(department: Department) {
   dialogMode.value = 'edit'
   formName.value = department.name
-  formShortName.value = department.shortName
+  formShortName.value = department.shortName || ''
   formDescription.value = department.description || ''
   editingItem.value = department
   showDialog.value = true

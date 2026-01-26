@@ -1,6 +1,6 @@
 import { api } from './api'
 
-export interface CommitteeDto {
+export interface DepartmentDto {
     id: string
     name: string
     shortName: string
@@ -9,13 +9,13 @@ export interface CommitteeDto {
     updatedAt: string
 }
 
-export interface CreateCommitteeDto {
+export interface CreateDepartmentDto {
     name: string
     shortName: string
     description?: string
 }
 
-export interface UpdateCommitteeDto {
+export interface UpdateDepartmentDto {
     name: string
     shortName: string
     description?: string
@@ -28,54 +28,62 @@ interface ApiResponse<T> {
     timestamp: string
 }
 
-export class CommitteesApi {
-    private static readonly BASE_PATH = '/api/v1/management/committee'
+export class DepartmentsApi {
+    private static readonly BASE_PATH = '/api/v1/management/department'
 
-    static async getAll(): Promise<CommitteeDto[]> {
+    static async getAll(): Promise<DepartmentDto[]> {
         try {
-            const response = await api.get<ApiResponse<CommitteeDto[]>>(this.BASE_PATH)
+            const response = await api.get<ApiResponse<DepartmentDto[]>>(this.BASE_PATH)
             return response.data || []
         } catch (error) {
-            console.error('Error fetching committees:', error)
+            console.error('Error fetching departments:', error)
             throw this.handleError(error)
         }
     }
 
-    static async getById(id: string): Promise<CommitteeDto> {
+    static async getById(id: string): Promise<DepartmentDto> {
         try {
-            const response = await api.get<ApiResponse<CommitteeDto>>(`${this.BASE_PATH}/${id}`)
+            const response = await api.get<ApiResponse<DepartmentDto>>(`${this.BASE_PATH}/${id}`)
             if (!response.data) {
-                throw new Error('Committee not found')
+                throw new Error('Department not found')
             }
             return response.data
         } catch (error) {
-            console.error(`Error fetching committee ${id}:`, error)
+            console.error(`Error fetching department ${id}:`, error)
             throw this.handleError(error)
         }
     }
 
-    static async create(data: CreateCommitteeDto): Promise<CommitteeDto> {
+    static async create(data: {
+        name: string;
+        shortName: string | undefined;
+        description: string | undefined
+    }): Promise<DepartmentDto> {
         try {
-            const response = await api.post<ApiResponse<CommitteeDto>>(this.BASE_PATH, data)
+            const response = await api.post<ApiResponse<DepartmentDto>>(this.BASE_PATH, data)
             if (!response.data) {
-                throw new Error('Failed to create committee')
+                throw new Error('Failed to create department')
             }
             return response.data
         } catch (error) {
-            console.error('Error creating committee:', error)
+            console.error('Error creating department:', error)
             throw this.handleError(error)
         }
     }
 
-    static async update(id: string, data: UpdateCommitteeDto): Promise<CommitteeDto> {
+    static async update(id: string, data: {
+        name: string;
+        shortName: string | undefined;
+        description: string | undefined
+    }): Promise<DepartmentDto> {
         try {
-            const response = await api.put<ApiResponse<CommitteeDto>>(`${this.BASE_PATH}/${id}`, data)
+            const response = await api.put<ApiResponse<DepartmentDto>>(`${this.BASE_PATH}/${id}`, data)
             if (!response.data) {
-                throw new Error('Failed to update committee')
+                throw new Error('Failed to update department')
             }
             return response.data
         } catch (error) {
-            console.error(`Error updating committee ${id}:`, error)
+            console.error(`Error updating department ${id}:`, error)
             throw this.handleError(error)
         }
     }
@@ -84,7 +92,7 @@ export class CommitteesApi {
         try {
             await api.delete(`${this.BASE_PATH}/${id}`)
         } catch (error) {
-            console.error(`Error deleting committee ${id}:`, error)
+            console.error(`Error deleting department ${id}:`, error)
             throw this.handleError(error)
         }
     }
@@ -95,7 +103,7 @@ export class CommitteesApi {
                 return new Error('Sie haben keine Berechtigung, auf diese Ressource zuzugreifen')
             }
             if (error.message.includes('404')) {
-                return new Error('Gremium nicht gefunden')
+                return new Error('Fachdienst nicht gefunden')
             }
             if (error.message.includes('401')) {
                 return new Error('Authentifizierung fehlgeschlagen')
