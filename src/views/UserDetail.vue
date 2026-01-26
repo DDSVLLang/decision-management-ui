@@ -16,7 +16,7 @@
           <div class="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
             <div>
               <h2 class="text-2xl font-bold text-gray-900">
-                {{ user.first_name }} {{ user.last_name }}
+                {{ user.firstName }} {{ user.lastName }}
               </h2>
               <p class="mt-1 text-sm text-gray-500">Benutzer-ID: {{ user.id }}</p>
             </div>
@@ -33,12 +33,12 @@
             <dl class="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <div>
                 <dt class="text-sm font-medium text-gray-500">Vorname</dt>
-                <dd class="mt-1 text-sm text-gray-900">{{ user.first_name }}</dd>
+                <dd class="mt-1 text-sm text-gray-900">{{ user.firstName }}</dd>
               </div>
 
               <div>
                 <dt class="text-sm font-medium text-gray-500">Name</dt>
-                <dd class="mt-1 text-sm text-gray-900">{{ user.last_name }}</dd>
+                <dd class="mt-1 text-sm text-gray-900">{{ user.lastName }}</dd>
               </div>
 
               <div>
@@ -62,24 +62,31 @@
 
               <div>
                 <dt class="text-sm font-medium text-gray-500">Fachbereich</dt>
-                <dd class="mt-1 text-sm text-gray-900">{{ user.responsibleDepartment || 'Nicht zugewiesen' }}</dd>
+                <dd class="mt-1 text-sm text-gray-900">{{ user.department?.name || user.responsibleDepartment || 'Nicht zugewiesen' }}</dd>
+              </div>
+
+              <div>
+                <dt class="text-sm font-medium text-gray-500">Status</dt>
+                <dd class="mt-1">
+                  <span
+                      :class="[
+                      'px-2 py-1 rounded-full text-xs font-medium',
+                      user.active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                    ]"
+                  >
+                    {{ user.active ? 'Aktiv' : 'Inaktiv' }}
+                  </span>
+                </dd>
               </div>
 
               <div>
                 <dt class="text-sm font-medium text-gray-500">Erstellt am</dt>
-                <dd class="mt-1 text-sm text-gray-900">{{ formatDateTime(user.created_at) }}</dd>
+                <dd class="mt-1 text-sm text-gray-900">{{ formatDateTime(user.createdAt) }}</dd>
               </div>
 
               <div>
                 <dt class="text-sm font-medium text-gray-500">Aktualisiert am</dt>
-                <dd class="mt-1 text-sm text-gray-900">{{ formatDateTime(user.updated_at) }}</dd>
-              </div>
-
-              <div v-if="user.created_by" class="sm:col-span-2">
-                <dt class="text-sm font-medium text-gray-500">Erstellt von</dt>
-                <dd class="mt-1 text-sm text-gray-900">
-                  {{ getCreatorName(user.created_by) }}
-                </dd>
+                <dd class="mt-1 text-sm text-gray-900">{{ formatDateTime(user.updatedAt) }}</dd>
               </div>
 
               <div class="sm:col-span-2">
@@ -111,25 +118,25 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useUsersStore } from '../stores/users'
 import AppLayout from '../components/AppLayout.vue'
 import { ArrowLeftIcon, PencilIcon, TrashIcon } from '@heroicons/vue/24/outline'
 
 const route = useRoute()
-const router = useRouter()
 const authStore = useAuthStore()
 const usersStore = useUsersStore()
 
 const userId = computed(() => route.params.id as string)
-const user = computed(() => usersStore.users.find(u => u.id === userId.value))
+const user = computed(() => usersStore.getUserById(userId.value))
 
-function getCreatorName(creatorId: string): string {
-  const creator = usersStore.users.find(u => u.id === creatorId)
-  return creator ? `${creator.first_name} ${creator.last_name}` : 'Unbekannt'
-}
+onMounted(() => {
+  if (usersStore.users.length === 0) {
+    usersStore.fetchUsers()
+  }
+})
 
 function formatDateTime(dateString: string): string {
   const date = new Date(dateString)
@@ -143,13 +150,10 @@ function formatDateTime(dateString: string): string {
 }
 
 async function handleDelete() {
-  if (!confirm(`Möchten Sie den Benutzer "${user.value?.first_name} ${user.value?.last_name}" wirklich löschen?`)) {
+  if (!confirm(`Möchten Sie den Benutzer "${user.value?.firstName} ${user.value?.lastName}" wirklich löschen?`)) {
     return
   }
 
-  if (userId.value) {
-    usersStore.deleteUser(userId.value)
-    router.push('/users')
-  }
+  alert('Löschen ist noch nicht implementiert')
 }
 </script>

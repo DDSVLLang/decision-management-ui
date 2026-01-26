@@ -32,7 +32,9 @@ async function apiRequest<T>(endpoint: string, options: ApiRequestOptions = {}):
         let errorMessage = `API Error: ${response.status} ${response.statusText}`
         try {
             const errorData = await response.json()
-            if (errorData.message) {
+            if (errorData.validationErrors) {
+                errorMessage = JSON.stringify(errorData)
+            } else if (errorData.message) {
                 errorMessage = errorData.message
             }
         } catch {

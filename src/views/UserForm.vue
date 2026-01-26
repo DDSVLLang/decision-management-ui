@@ -24,7 +24,7 @@
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Vorname*</label>
                 <input
-                    v-model="form.first_name"
+                    v-model="form.firstName"
                     type="text"
                     required
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -35,7 +35,7 @@
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Name*</label>
                 <input
-                    v-model="form.last_name"
+                    v-model="form.lastName"
                     type="text"
                     required
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -93,12 +93,12 @@
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Fachbereich</label>
               <select
-                  v-model="form.responsibleDepartment"
+                  v-model="form.departmentId"
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
                 <option value="">Kein Fachbereich zugewiesen</option>
-                <option v-for="dept in departments" :key="dept" :value="dept">
-                  {{ dept }}
+                <option v-for="dept in departments" :key="dept.id" :value="dept.id">
+                  {{ dept.name }} ({{ dept.shortName }})
                 </option>
               </select>
             </div>
@@ -135,6 +135,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useUsersStore } from '../stores/users'
+import { UsersApi, type CreateUserDto } from '../lib/usersApi'
+import { DepartmentsApi, type DepartmentDto } from '../lib/departmentsApi'
 import AppLayout from '../components/AppLayout.vue'
 import { ArrowLeftIcon } from '@heroicons/vue/24/outline'
 
@@ -145,31 +147,21 @@ const usersStore = useUsersStore()
 
 const loading = ref(false)
 const errorMessage = ref('')
+const departments = ref<DepartmentDto[]>([])
 
 const isEdit = computed(() => !!route.params.id)
 const userId = computed(() => route.params.id as string)
 const user = computed(() =>
-    isEdit.value ? usersStore.users.find(u => u.id === userId.value) : null
+    isEdit.value ? usersStore.getUserById(userId.value) : null
 )
 
-const departments = [
-  'FD 10',
-  'FD 13',
-  'FD 20',
-  'FD 30',
-  'FD 40',
-  'FD 50',
-  'FD 60',
-  'FD 70'
-]
-
 const form = ref({
-  first_name: '',
-  last_name: '',
+  firstName: '',
+  lastName: '',
   email: '',
   password: '',
   role: 'user' as 'admin' | 'user',
-  responsibleDepartment: ''
+  departmentId: ''
 })
 
 function generatePassword() {
@@ -195,36 +187,26 @@ async function saveUser() {
   errorMessage.value = ''
 
   try {
-    await new Promise(resolve => setTimeout(resolve, 300))
-
-    const existingUser = usersStore.getUserByEmail(form.value.email)
-    if (existingUser && (!isEdit.value || existingUser.id !== userId.value)) {
-      errorMessage.value = 'Ein Benutzer mit dieser E-Mail-Adresse existiert bereits'
+    if (isEdit.value) {
+      errorMessage.value = 'Bearbeiten ist noch nicht implementiert'
       loading.value = false
       return
     }
 
-    if (isEdit.value) {
-      usersStore.updateUser(userId.value, {
-        first_name: form.value.first_name,
-        last_name: form.value.last_name,
-        email: form.value.email,
-        role: form.value.role,
-        responsibleDepartment: form.value.responsibleDepartment || undefined
-      })
-      router.push(`/users/${userId.value}`)
-    } else {
-      const newUser = usersStore.addUser({
-        first_name: form.value.first_name,
-        last_name: form.value.last_name,
-        email: form.value.email,
-        password: form.value.password,
-        role: form.value.role,
-        responsibleDepartment: form.value.responsibleDepartment || undefined,
-        created_by: authStore.user?.id
-      })
-      router.push(`/users/${newUser.id}`)
+    const createData: CreateUserDto = {
+      email: form.value.email,
+      password: form.value.password,
+      firstName: form.value.firstName,
+      lastName: form.value.lastName,
+      role: form.value.role === 'admin' ? 'ADMIN' : 'USER',
+      ...(form.value.departmentId && { departmentId: form.value.departmentId })
     }
+
+    const createdUser = await UsersApi.createUser(createData)
+
+    await usersStore.fetchUsers()
+
+    router.push(`/users/${createdUser.id}`)
   } catch (error: any) {
     console.error('Error saving user:', error)
     errorMessage.value = error.message || 'Ein Fehler ist aufgetreten'
@@ -233,20 +215,30 @@ async function saveUser() {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   if (!authStore.isAdmin) {
     router.push('/')
     return
   }
 
+  try {
+    departments.value = await DepartmentsApi.getAll()
+  } catch (error) {
+    console.error('Error loading departments:', error)
+  }
+
+  if (usersStore.users.length === 0) {
+    await usersStore.fetchUsers()
+  }
+
   if (isEdit.value && user.value) {
     form.value = {
-      first_name: user.value.first_name,
-      last_name: user.value.last_name,
+      firstName: user.value.firstName,
+      lastName: user.value.lastName,
       email: user.value.email,
       password: '',
       role: user.value.role,
-      responsibleDepartment: user.value.responsibleDepartment || ''
+      departmentId: user.value.department?.id || ''
     }
   } else if (!isEdit.value) {
     generatePassword()

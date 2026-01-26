@@ -3,7 +3,7 @@
     <div class="p-6">
       <div class="mb-8 flex items-center justify-between">
         <div>
-          <h3 class="text-2xl font-normal tracking-[0.08em] text-gray-600">Benutzer</h3>
+          <h2 class="text-2xl font-bold text-gray-900">Benutzer</h2>
         </div>
         <router-link
             to="/users/new"
@@ -14,7 +14,15 @@
         </router-link>
       </div>
 
-      <div class="bg-white rounded-lg shadow overflow-hidden">
+      <div v-if="usersStore.loading" class="flex justify-center items-center py-12">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+
+      <div v-else-if="usersStore.error" class="bg-red-50 border border-red-200 rounded-lg p-4">
+        <p class="text-red-800">{{ usersStore.error }}</p>
+      </div>
+
+      <div v-else class="bg-white rounded-lg shadow overflow-hidden">
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
@@ -50,16 +58,16 @@
                 class="hover:bg-gray-50 cursor-pointer"
             >
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                {{ user.last_name }}
+                {{ user.lastName }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {{ user.first_name }}
+                {{ user.firstName }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                 {{ user.email }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {{ user.responsibleDepartment || '-' }}
+                {{ user.department?.name || user.responsibleDepartment || '-' }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   <span
@@ -72,7 +80,7 @@
                   </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {{ formatDate(user.created_at) }}
+                {{ formatDate(user.createdAt) }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 <div class="flex space-x-2" @click.stop>
@@ -106,6 +114,7 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useUsersStore } from '../stores/users'
 import AppLayout from '../components/AppLayout.vue'
@@ -114,6 +123,10 @@ import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/vue/24/outline'
 const authStore = useAuthStore()
 const usersStore = useUsersStore()
 
+onMounted(() => {
+  usersStore.fetchUsers()
+})
+
 async function deleteUser(userId: string) {
   if (userId === authStore.user?.id) {
     alert('Sie können sich nicht selbst löschen.')
@@ -121,11 +134,11 @@ async function deleteUser(userId: string) {
   }
 
   const user = usersStore.users.find(u => u.id === userId)
-  if (!confirm(`Möchten Sie den Benutzer "${user?.first_name} ${user?.last_name}" wirklich löschen?`)) {
+  if (!confirm(`Möchten Sie den Benutzer "${user?.firstName} ${user?.lastName}" wirklich löschen?`)) {
     return
   }
 
-  usersStore.deleteUser(userId)
+  alert('Löschen ist noch nicht implementiert')
 }
 
 function formatDate(dateString: string): string {
