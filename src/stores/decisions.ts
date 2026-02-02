@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useAuthStore } from './auth'
+import { useManagementStore } from './management'
 import { DecisionsApi, type Decision as ApiDecision, type Department } from '../lib/decisionsApi'
 
 export interface Decision {
@@ -87,35 +88,19 @@ export const useDecisionStore = defineStore('decisions', () => {
     }
   }
 
-  const committees = ref([
-    'STVV',
-    'Haupt- und Finanzausschuss',
-    'Bauausschuss',
-    'Sozialausschuss',
-    'Umwelt- und Klimaschutzausschuss'
-  ])
+  const managementStore = useManagementStore()
 
-  const departments = ref([
-    'FD 13',
-    'FD 10',
-    'FD 20',
-    'FD 30',
-    'FD 40',
-    'FD 50',
-    'FD 60',
-    'FD 70'
-  ])
+  const committees = computed(() => managementStore.committees.map(c => c.name))
+  const departments = computed(() => managementStore.departments.map(d => d.name))
+  const topics = computed(() => managementStore.topics.map(t => t.name))
 
-  const topics = ref([
-    'Radverkehrskonzept',
-    'Straßenbahn',
-    'Stadtentwicklung',
-    'Umwelt',
-    'Bildung',
-    'Soziales',
-    'Finanzen',
-    'Verwaltung'
-  ])
+  async function loadManagementData() {
+    await Promise.all([
+      managementStore.loadCommittees(),
+      managementStore.loadDepartments(),
+      managementStore.loadTopics()
+    ])
+  }
 
   const pendingDecisions = computed(() =>
       decisions.value.filter(d => d.status === 'pending' || d.status === 'in-progress')
@@ -272,6 +257,7 @@ export const useDecisionStore = defineStore('decisions', () => {
     topics,
     pendingDecisions,
     completedDecisions,
+    loadManagementData,
     fetchDecisions,
     addDecision,
     updateDecision,

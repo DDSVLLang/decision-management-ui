@@ -22,7 +22,7 @@
             <ArrowLeftIcon class="h-5 w-5 mr-2" />
             Zurück
           </button>
-          <h2 class="text-2xl font-normal tracking-[0.08em] text-gray-600">Beschluss #{{ decision.id }}</h2>
+          <h2 class="text-2xl font-bold text-gray-900">Beschluss #{{ decision.id }}</h2>
           <StatusBadge :status="decision.status" />
         </div>
         <div class="flex items-center space-x-3">
@@ -115,7 +115,7 @@
                 <p class="mt-1 text-sm text-gray-900">{{ decision.printMatter }}</p>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700">Zuständige Organisationseinheiten</label>
+                <label class="block text-sm font-medium text-gray-700">Zuständige Fachbereiche</label>
                 <div class="mt-1 flex flex-wrap gap-2">
                   <span
                       v-for="dept in decision.responsibleDepartments"
@@ -313,7 +313,7 @@ const hasAccess = computed(() => {
   if (!decision.value) return false
   if (authStore.isAdmin) return true
   if (!authStore.user?.department) return false
-  return decision.value.departments.map(d => d.id).includes(authStore.user.department.id)
+  return decision.value.responsibleDepartments.includes(authStore.user.department)
 })
 
 const isCompleted = computed(() => decision.value?.status === 'completed')
