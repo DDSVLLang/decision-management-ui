@@ -361,6 +361,9 @@ function performSearch() {
   if (topicFilter.value) {
     params.topic = topicFilter.value
   }
+  if (searchTerm.value && searchTerm.value.length >= 3) {
+    params.keyword = searchTerm.value
+  }
 
   store.fetchDecisions(params)
 }
@@ -372,6 +375,12 @@ onMounted(async () => {
 
 watch([statusFilter, committeeFilter, departmentFilter, topicFilter], () => {
   performSearch()
+})
+
+watch(searchTerm, () => {
+  if (searchTerm.value.length >= 3 || searchTerm.value.length === 0) {
+    performSearch()
+  }
 })
 
 function formatDate(dateString: string): string {
@@ -412,6 +421,9 @@ function goToPage(page: number) {
   }
   if (topicFilter.value) {
     params.topic = topicFilter.value
+  }
+  if (searchTerm.value && searchTerm.value.length >= 3) {
+    params.keyword = searchTerm.value
   }
 
   store.fetchDecisions(params)

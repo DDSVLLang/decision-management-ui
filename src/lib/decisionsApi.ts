@@ -78,6 +78,7 @@ export interface DecisionSearchParams {
     committee?: string
     department?: string
     topic?: string
+    keyword?: string
 }
 
 export class DecisionsApi {
@@ -99,6 +100,9 @@ export class DecisionsApi {
             }
             if (params.topic) {
                 queryParams.append('topic', params.topic)
+            }
+            if (params.keyword) {
+                queryParams.append('keyword', params.keyword)
             }
 
             const response = await api.get<DecisionSearchResponse>(
