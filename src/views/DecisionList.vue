@@ -304,7 +304,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useDecisionStore, type Decision } from '../stores/decisions'
 import { useAuthStore } from '../stores/auth'
 import AppLayout from '../components/AppLayout.vue'
@@ -314,11 +314,6 @@ import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } fro
 
 const store = useDecisionStore()
 const authStore = useAuthStore()
-
-onMounted(async () => {
-  await store.loadManagementData()
-  store.fetchDecisions(0, 20)
-})
 
 const searchTerm = ref('')
 const statusFilter = ref('')
@@ -336,43 +331,47 @@ const topics = computed(() => store.topics)
 const filteredDecisions = computed(() => {
   let filtered = decisions.value
 
-  // Filter out deleted decisions for non-admin users
-  // And filter by department for non-admin users
   if (!authStore.isAdmin) {
     filtered = filtered.filter(d => !d.deleted)
 
-    // Users can only see decisions from their own department
     const userDepartment = authStore.user?.responsibleDepartment
     if (userDepartment) {
       filtered = filtered.filter(d => d.responsibleDepartments.includes(userDepartment))
     }
   }
 
-  if (searchTerm.value) {
-    const term = searchTerm.value.toLowerCase()
-    filtered = filtered.filter(d =>
-        d.title.toLowerCase().includes(term) ||
-        d.content.toLowerCase().includes(term)
-    )
+  return filtered
+})
+
+function performSearch() {
+  const params: any = {
+    page: 0,
+    size: 20
   }
 
   if (statusFilter.value) {
-    filtered = filtered.filter(d => d.status === statusFilter.value)
+    params.status = statusFilter.value
   }
-
   if (committeeFilter.value) {
-    filtered = filtered.filter(d => d.decisionBody === committeeFilter.value)
+    params.committee = committeeFilter.value
   }
-
   if (departmentFilter.value) {
-    filtered = filtered.filter(d => d.responsibleDepartments.includes(departmentFilter.value))
+    params.department = departmentFilter.value
   }
-
   if (topicFilter.value) {
-    filtered = filtered.filter(d => d.topic === topicFilter.value)
+    params.topic = topicFilter.value
   }
 
-  return filtered
+  store.fetchDecisions(params)
+}
+
+onMounted(async () => {
+  await store.loadManagementData()
+  performSearch()
+})
+
+watch([statusFilter, committeeFilter, departmentFilter, topicFilter], () => {
+  performSearch()
 })
 
 function formatDate(dateString: string): string {
@@ -397,7 +396,25 @@ function confirmDelete() {
 }
 
 function goToPage(page: number) {
-  store.fetchDecisions(page, 20)
+  const params: any = {
+    page,
+    size: 20
+  }
+
+  if (statusFilter.value) {
+    params.status = statusFilter.value
+  }
+  if (committeeFilter.value) {
+    params.committee = committeeFilter.value
+  }
+  if (departmentFilter.value) {
+    params.department = departmentFilter.value
+  }
+  if (topicFilter.value) {
+    params.topic = topicFilter.value
+  }
+
+  store.fetchDecisions(params)
 }
 
 function previousPage() {

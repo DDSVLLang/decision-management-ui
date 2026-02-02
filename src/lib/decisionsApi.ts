@@ -71,11 +71,38 @@ export interface DecisionSearchResponse {
     timestamp: string
 }
 
+export interface DecisionSearchParams {
+    page?: number
+    size?: number
+    status?: string
+    committee?: string
+    department?: string
+    topic?: string
+}
+
 export class DecisionsApi {
-    static async searchDecisions(page: number = 0, size: number = 20): Promise<DecisionSearchResponse> {
+    static async searchDecisions(params: DecisionSearchParams = {}): Promise<DecisionSearchResponse> {
         try {
+            const queryParams = new URLSearchParams()
+
+            queryParams.append('page', (params.page ?? 0).toString())
+            queryParams.append('size', (params.size ?? 20).toString())
+
+            if (params.status) {
+                queryParams.append('status', params.status)
+            }
+            if (params.committee) {
+                queryParams.append('committee', params.committee)
+            }
+            if (params.department) {
+                queryParams.append('department', params.department)
+            }
+            if (params.topic) {
+                queryParams.append('topic', params.topic)
+            }
+
             const response = await api.get<DecisionSearchResponse>(
-                `/api/v1/decision/search?size=${size}&page=${page}`
+                `/api/v1/decision/search?${queryParams.toString()}`
             )
             return response
         } catch (error: any) {

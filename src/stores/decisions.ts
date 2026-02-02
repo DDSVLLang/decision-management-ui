@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useAuthStore } from './auth'
 import { useManagementStore } from './management'
-import { DecisionsApi, type Decision as ApiDecision, type Department } from '../lib/decisionsApi'
+import { DecisionsApi, type Decision as ApiDecision, type Department, type DecisionSearchParams } from '../lib/decisionsApi'
 
 export interface Decision {
   id: string
@@ -70,11 +70,21 @@ export const useDecisionStore = defineStore('decisions', () => {
   const totalElements = ref(0)
   const pageSize = ref(20)
 
-  async function fetchDecisions(page: number = 0, size: number = 20) {
+  async function fetchDecisions(params: DecisionSearchParams = {}) {
     loading.value = true
     error.value = null
     try {
-      const response = await DecisionsApi.searchDecisions(page, size)
+      const response = await DecisionsApi.searchDecisions(params)
+
+      if (!response.data || !response.data.content) {
+        decisions.value = []
+        currentPage.value = 0
+        totalPages.value = 0
+        totalElements.value = 0
+        pageSize.value = params.size ?? 20
+        return
+      }
+
       decisions.value = response.data.content.map(mapApiDecisionToDecision)
       currentPage.value = response.data.number
       totalPages.value = response.data.totalPages
