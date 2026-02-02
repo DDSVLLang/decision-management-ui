@@ -14,7 +14,7 @@
       <div class="max-w-4xl">
         <div class="bg-white rounded-lg shadow overflow-hidden">
           <div class="px-6 py-5 border-b border-gray-200">
-            <h2 class="text-2xl font-bold text-gray-900">
+            <h2 class="text-2xl font-normal tracking-[0.08em] text-gray-600">
               {{ isEdit ? 'Beschluss bearbeiten' : 'Neuer Beschluss' }}
             </h2>
           </div>
@@ -57,14 +57,14 @@
               </div>
 
               <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Zuständige Fachbereiche* (mindestens einen auswählen)</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Zuständige Organisationseinheiten* (mindestens einen auswählen)</label>
                 <Listbox v-model="form.responsibleDepartments" multiple>
                   <div class="relative">
                     <ListboxButton
                         class="relative w-full cursor-pointer rounded-md bg-white py-2 pl-3 pr-10 text-left border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     >
                       <span v-if="form.responsibleDepartments.length === 0" class="block truncate text-gray-400">
-                        Fachbereiche auswählen...
+                        Organisationseinheiten auswählen...
                       </span>
                       <span v-else class="flex flex-wrap gap-1">
                         <span
@@ -122,7 +122,7 @@
                   </div>
                 </Listbox>
                 <p v-if="form.responsibleDepartments.length === 0" class="mt-1 text-sm text-red-600">
-                  Bitte mindestens einen Fachbereich auswählen
+                  Bitte mindestens eine Organisationseinheit auswählen
                 </p>
               </div>
 
@@ -264,7 +264,7 @@ async function saveDecision() {
   }
 
   if (form.value.responsibleDepartments.length === 0) {
-    errorMessage.value = 'Bitte mindestens einen Fachbereich auswählen.'
+    errorMessage.value = 'Bitte mindestens eine Organisationseinheit auswählen.'
     return
   }
 

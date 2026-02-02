@@ -3,7 +3,7 @@
     <div class="p-6">
       <div class="mb-6">
         <h3 class="text-2xl font-normal tracking-[0.08em] text-gray-600">Verwaltung</h3>
-        <p class="mt-1 text-sm text-[#8a8578]">Verwalten Sie Themen, Gremien und Fachbereiche</p>
+        <p class="mt-1 text-sm text-[#8a8578]">Verwalten Sie Themen, Gremien und Organisationseinheiten</p>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -42,8 +42,8 @@
               <BuildingOfficeIcon class="h-6 w-6 text-primary-600" />
             </div>
           </div>
-          <h3 class="text-lg font-semibold text-gray-600 mb-2">Fachbereiche</h3>
-          <p class="text-sm text-gray-600">Zuständige Fachbereiche verwalten</p>
+          <h3 class="text-lg font-semibold text-gray-600 mb-2">Organisationseinheiten</h3>
+          <p class="text-sm text-gray-600">Zuständige Organisationseinheiten verwalten</p>
         </router-link>
       </div>
     </div>

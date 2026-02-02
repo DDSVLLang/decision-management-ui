@@ -10,14 +10,14 @@
             <ArrowLeftIcon class="h-5 w-5 mr-2" />
             Zurück
           </button>
-          <h2 class="text-2xl font-bold text-gray-900">Fachbereiche verwalten</h2>
+          <h2 class="text-2xl font-normal tracking-[0.08em] text-gray-600">Organisationseinheiten verwalten</h2>
         </div>
         <button
             @click="openAddDialog"
             class="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors duration-200 flex items-center"
         >
           <PlusIcon class="h-5 w-5 mr-2" />
-          Neuer Fachbereich
+          Neue Organisationseinheit
         </button>
       </div>
 
@@ -30,7 +30,7 @@
           Laden...
         </div>
         <div v-else-if="store.departments.length === 0" class="p-8 text-center text-gray-500">
-          Keine Fachbereiche vorhanden. Klicken Sie auf "Neuer Fachbereich", um einen hinzuzufügen.
+          Keine Organisationseinheit vorhanden. Klicken Sie auf "Neue Organisationseinheit", um einen hinzuzufügen.
         </div>
         <table v-else class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
@@ -112,7 +112,7 @@
               >
                 <DialogPanel class="w-full max-w-lg transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
                   <DialogTitle as="h3" class="text-lg font-medium leading-6 text-gray-900">
-                    {{ dialogMode === 'add' ? 'Neuen Fachbereich hinzufügen' : 'Fachbereich bearbeiten' }}
+                    {{ dialogMode === 'add' ? 'Neue Organisationseinheit hinzufügen' : 'Organisationseinheit bearbeiten' }}
                   </DialogTitle>
 
                   <div class="mt-4 space-y-4">
@@ -204,7 +204,7 @@
               >
                 <DialogPanel class="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
                   <DialogTitle as="h3" class="text-lg font-medium leading-6 text-gray-900">
-                    Fachbereich löschen
+                    Organisationseinheit löschen
                   </DialogTitle>
                   <div class="mt-2">
                     <p class="text-sm text-gray-500">

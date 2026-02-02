@@ -61,7 +61,7 @@
                 Drucksache
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                zust. Fachbereich
+                zust. Organisationseinheit
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 vor. erledigt bis:
@@ -193,7 +193,7 @@ function formatDate(dateString: string): string {
 function exportReport() {
   // Simple CSV export
   const csvContent = [
-    ['Thema', 'Betreff', 'Beschlussdatum', 'Gremium', 'Drucksache', 'Fachbereich', 'Status', 'Sachstand', 'vor. erledigt bis'].join(';'),
+    ['Thema', 'Betreff', 'Beschlussdatum', 'Gremium', 'Drucksache', 'Organisationseinheit', 'Status', 'Sachstand', 'vor. erledigt bis'].join(';'),
     ...reportDecisions.value.map(decision => [
       decision.topic,
       decision.title,

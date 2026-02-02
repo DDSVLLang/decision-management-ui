@@ -2,8 +2,8 @@
   <AppLayout>
     <div class="p-6">
       <div class="mb-8 flex items-center justify-between">
-        <div>
-          <h2 class="text-2xl font-bold text-gray-900">Beschlüsse</h2>
+        <div class="mb-6">
+          <h3 class="text-2xl font-normal tracking-[0.08em] text-gray-600">Beschlüsse</h3>
         </div>
         <router-link
             v-if="authStore.isAdmin"
@@ -52,7 +52,7 @@
             </select>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Fachbereich</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Organisationseinheit</label>
             <select
                 v-model="departmentFilter"
                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -110,7 +110,7 @@
                 Status
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Fachbereiche
+                Organisationseinheiten
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Aktionen

@@ -15,7 +15,7 @@
         <div class="bg-white rounded-lg shadow overflow-hidden">
           <div class="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
             <div>
-              <h2 class="text-2xl font-bold text-gray-900">
+              <h2 class="text-2xl font-normal tracking-[0.08em] text-gray-800">
                 {{ user.firstName }} {{ user.lastName }}
               </h2>
               <p class="mt-1 text-sm text-gray-500">Benutzer-ID: {{ user.id }}</p>
@@ -61,7 +61,7 @@
               </div>
 
               <div>
-                <dt class="text-sm font-medium text-gray-500">Fachbereich</dt>
+                <dt class="text-sm font-medium text-gray-500">Organisationseinheit</dt>
                 <dd class="mt-1 text-sm text-gray-900">{{ user.department?.name || user.responsibleDepartment || 'Nicht zugewiesen' }}</dd>
               </div>
 

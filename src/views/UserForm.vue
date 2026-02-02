@@ -14,7 +14,7 @@
       <div class="max-w-2xl">
         <div class="bg-white rounded-lg shadow overflow-hidden">
           <div class="px-6 py-5 border-b border-gray-200">
-            <h2 class="text-2xl font-bold text-gray-900">
+            <h2 class="text-2xl font-normal tracking-[0.08em] text-gray-600">
               {{ isEdit ? 'Benutzer bearbeiten' : 'Neuer Benutzer' }}
             </h2>
           </div>
@@ -93,12 +93,12 @@
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Fachbereich</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Organisationseinheit</label>
               <select
                   v-model="form.departmentId"
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
-                <option value="">Kein Fachbereich zugewiesen</option>
+                <option value="">Kein Organisationseinheit zugewiesen</option>
                 <option v-for="dept in departments" :key="dept.id" :value="dept.id">
                   {{ dept.name }} ({{ dept.shortName }})
                 </option>

@@ -10,7 +10,7 @@
             <ArrowLeftIcon class="h-5 w-5 mr-2" />
             Zurück
           </button>
-          <h2 class="text-2xl font-bold text-gray-900">Gremien verwalten</h2>
+          <h2 class="text-2xl font-normal tracking-[0.08em] text-gray-600">Gremien verwalten</h2>
         </div>
         <button
             @click="openAddDialog"
