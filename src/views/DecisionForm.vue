@@ -51,9 +51,20 @@
                     v-model="form.printMatter"
                     type="text"
                     required
-                    placeholder="z.B. 265-1/XVIII/17"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    placeholder="z.B. 287-11/XVI/11 oder 287/XVI/11"
+                    @blur="validatePrintMatter"
+                    @input="printMatterError = ''"
+                    :class="[
+                      'w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:border-transparent',
+                      printMatterError ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-primary-500'
+                    ]"
                 />
+                <p v-if="printMatterError" class="mt-1 text-sm text-red-600">
+                  {{ printMatterError }}
+                </p>
+                <p v-else class="mt-1 text-xs text-gray-500">
+                  Format: Zahl-Zahl/Römisch/Zahl oder Zahl/Römisch/Zahl
+                </p>
               </div>
 
               <div class="md:col-span-2">
@@ -225,6 +236,7 @@ const store = useDecisionStore()
 
 const loading = ref(false)
 const errorMessage = ref('')
+const printMatterError = ref('')
 
 const isEdit = computed(() => !!route.params.id)
 const decisionId = computed(() => route.params.id ? route.params.id as string : null)
@@ -257,6 +269,25 @@ function handleCancel() {
   }
 }
 
+function validatePrintMatter() {
+  const printMatter = form.value.printMatter.trim()
+
+  if (!printMatter) {
+    printMatterError.value = ''
+    return true
+  }
+
+  const pattern = /^\d+(-\d+)?\/[IVXLCDM]+\/\d{2}$/
+
+  if (!pattern.test(printMatter)) {
+    printMatterError.value = 'Ungültiges Format. Erwartet: Zahl-Zahl/Römisch/Zahl oder Zahl/Römisch/Zahl (z.B. 287-11/XVI/11 oder 287/XVI/11)'
+    return false
+  }
+
+  printMatterError.value = ''
+  return true
+}
+
 async function saveDecision() {
   if (!authStore.isAdmin) {
     errorMessage.value = 'Nur Administratoren können Beschlüsse erstellen oder bearbeiten.'
@@ -265,6 +296,11 @@ async function saveDecision() {
 
   if (form.value.responsibleDepartments.length === 0) {
     errorMessage.value = 'Bitte mindestens einen Fachbereich auswählen.'
+    return
+  }
+
+  if (!validatePrintMatter()) {
+    errorMessage.value = 'Bitte korrigieren Sie das Format der Drucksache.'
     return
   }
 
