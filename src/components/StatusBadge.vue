@@ -11,16 +11,18 @@
 import { computed } from 'vue'
 
 interface Props {
-  status: 'pending' | 'in-progress' | 'completed'
+  status: string
 }
 
 const props = defineProps<Props>()
 
 const statusClasses = computed(() => {
-  switch (props.status) {
+  const status = props.status.toLowerCase()
+  switch (status) {
     case 'pending':
       return 'bg-warning-100 text-warning-800'
     case 'in-progress':
+    case 'in_progress':
       return 'bg-primary-100 text-primary-800'
     case 'completed':
       return 'bg-success-100 text-success-800'
@@ -30,15 +32,17 @@ const statusClasses = computed(() => {
 })
 
 const statusText = computed(() => {
-  switch (props.status) {
+  const status = props.status.toLowerCase()
+  switch (status) {
     case 'pending':
       return 'Ausstehend'
     case 'in-progress':
+    case 'in_progress':
       return 'In Bearbeitung'
     case 'completed':
       return 'Abgeschlossen'
     default:
-      return 'Unbekannt'
+      return props.status
   }
 })
 </script>

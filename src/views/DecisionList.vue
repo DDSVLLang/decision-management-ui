@@ -78,8 +78,18 @@
         </div>
       </div>
 
+      <!-- Loading State -->
+      <div v-if="store.loading" class="flex justify-center items-center py-12">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+
+      <!-- Error State -->
+      <div v-else-if="store.error" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+        <p class="text-red-800">{{ store.error }}</p>
+      </div>
+
       <!-- Decisions Table -->
-      <div class="bg-white rounded-lg shadow overflow-hidden">
+      <div v-else class="bg-white rounded-lg shadow overflow-hidden">
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
@@ -150,7 +160,7 @@
                 </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                <div v-if="authStore.isAdmin && !decision.deleted" class="flex space-x-2">
+                <div v-if="!decision.deleted" class="flex space-x-2">
                   <button
                       @click.stop="$router.push(`/decisions/${decision.id}/edit`)"
                       class="text-primary-600 hover:text-primary-700"
@@ -158,6 +168,7 @@
                     <PencilIcon class="h-4 w-4" />
                   </button>
                   <button
+                      v-if="authStore.isAdmin"
                       @click.stop="openDeleteDialog(decision)"
                       class="text-error-600 hover:text-error-700"
                   >
@@ -174,6 +185,60 @@
 
         <div v-if="filteredDecisions.length === 0" class="p-8 text-center text-gray-500">
           Keine Beschlüsse gefunden.
+        </div>
+
+        <!-- Pagination -->
+        <div v-if="filteredDecisions.length > 0" class="bg-gray-50 px-6 py-4 flex items-center justify-between border-t border-gray-200">
+          <div class="flex-1 flex justify-between sm:hidden">
+            <button
+                @click="previousPage"
+                :disabled="store.currentPage === 0"
+                class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Zurück
+            </button>
+            <button
+                @click="nextPage"
+                :disabled="store.currentPage >= store.totalPages - 1"
+                class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Weiter
+            </button>
+          </div>
+          <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+              <p class="text-sm text-gray-700">
+                Zeige
+                <span class="font-medium">{{ store.currentPage * store.pageSize + 1 }}</span>
+                bis
+                <span class="font-medium">{{ Math.min((store.currentPage + 1) * store.pageSize, store.totalElements) }}</span>
+                von
+                <span class="font-medium">{{ store.totalElements }}</span>
+                Ergebnissen
+              </p>
+            </div>
+            <div>
+              <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                <button
+                    @click="previousPage"
+                    :disabled="store.currentPage === 0"
+                    class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeftIcon class="h-5 w-5" />
+                </button>
+                <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                  Seite {{ store.currentPage + 1 }} von {{ store.totalPages }}
+                </span>
+                <button
+                    @click="nextPage"
+                    :disabled="store.currentPage >= store.totalPages - 1"
+                    class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronRightIcon class="h-5 w-5" />
+                </button>
+              </nav>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -239,16 +304,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useDecisionStore, type Decision } from '../stores/decisions'
 import { useAuthStore } from '../stores/auth'
 import AppLayout from '../components/AppLayout.vue'
 import StatusBadge from '../components/StatusBadge.vue'
-import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/vue/24/outline'
+import { PlusIcon, PencilIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue'
 
 const store = useDecisionStore()
 const authStore = useAuthStore()
+
+onMounted(() => {
+  store.fetchDecisions(0, 20)
+})
 
 const searchTerm = ref('')
 const statusFilter = ref('')
@@ -323,6 +392,22 @@ function confirmDelete() {
   if (itemToDelete.value) {
     store.deleteDecision(itemToDelete.value.id)
     closeDeleteDialog()
+  }
+}
+
+function goToPage(page: number) {
+  store.fetchDecisions(page, 20)
+}
+
+function previousPage() {
+  if (store.currentPage > 0) {
+    goToPage(store.currentPage - 1)
+  }
+}
+
+function nextPage() {
+  if (store.currentPage < store.totalPages - 1) {
+    goToPage(store.currentPage + 1)
   }
 }
 </script>

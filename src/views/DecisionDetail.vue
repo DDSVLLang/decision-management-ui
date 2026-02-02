@@ -306,14 +306,14 @@ const store = useDecisionStore()
 const authStore = useAuthStore()
 
 const decision = computed(() =>
-    store.decisions.find(d => d.id === parseInt(route.params.id as string))
+    store.decisions.find(d => d.id === route.params.id as string)
 )
 
 const hasAccess = computed(() => {
   if (!decision.value) return false
   if (authStore.isAdmin) return true
-  if (!authStore.user?.responsibleDepartment) return false
-  return decision.value.responsibleDepartments.includes(authStore.user.responsibleDepartment)
+  if (!authStore.user?.department) return false
+  return decision.value.departments.map(d => d.id).includes(authStore.user.department.id)
 })
 
 const isCompleted = computed(() => decision.value?.status === 'completed')

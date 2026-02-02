@@ -227,7 +227,7 @@ const loading = ref(false)
 const errorMessage = ref('')
 
 const isEdit = computed(() => !!route.params.id)
-const decisionId = computed(() => route.params.id ? parseInt(route.params.id as string) : null)
+const decisionId = computed(() => route.params.id ? route.params.id as string : null)
 const decision = computed(() =>
     isEdit.value && decisionId.value ? store.decisions.find(d => d.id === decisionId.value) : null
 )
@@ -284,7 +284,10 @@ async function saveDecision() {
       topic: form.value.topic,
       content: form.value.content,
       dueDate: form.value.dueDate || undefined,
-      implementationNotes: form.value.implementationNotes || undefined
+      implementationNotes: form.value.implementationNotes || undefined,
+      departments: [],
+      priority: 'medium',
+      deleted: false
     }
 
     if (isEdit.value && decisionId.value) {
