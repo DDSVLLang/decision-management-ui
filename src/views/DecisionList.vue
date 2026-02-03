@@ -369,6 +369,9 @@ function performSearch() {
 }
 
 onMounted(async () => {
+  if (!authStore.isAdmin) {
+    statusFilter.value = 'in-progress'
+  }
   await store.loadManagementData()
   performSearch()
 })
