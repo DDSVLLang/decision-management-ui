@@ -55,31 +55,50 @@
                 v-for="user in usersStore.users"
                 :key="user.id"
                 @click="$router.push(`/users/${user.id}`)"
-                class="hover:bg-gray-50 cursor-pointer"
+                :class="[
+                  'hover:bg-gray-50 cursor-pointer',
+                  !user.active ? 'opacity-40' : ''
+                ]"
             >
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+              <td :class="[
+                'px-6 py-4 whitespace-nowrap text-sm font-medium',
+                !user.active ? 'text-gray-500' : 'text-gray-900'
+              ]">
                 {{ user.lastName }}
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              <td :class="[
+                'px-6 py-4 whitespace-nowrap text-sm',
+                !user.active ? 'text-gray-500' : 'text-gray-900'
+              ]">
                 {{ user.firstName }}
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              <td :class="[
+                'px-6 py-4 whitespace-nowrap text-sm',
+                !user.active ? 'text-gray-500' : 'text-gray-900'
+              ]">
                 {{ user.email }}
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              <td :class="[
+                'px-6 py-4 whitespace-nowrap text-sm',
+                !user.active ? 'text-gray-500' : 'text-gray-900'
+              ]">
                 {{ user.department?.name || user.responsibleDepartment || '-' }}
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              <td class="px-6 py-4 whitespace-nowrap text-sm">
                   <span
                       :class="[
                       'px-2 py-1 rounded-full text-xs font-medium',
+                      !user.active ? 'bg-gray-100 text-gray-600' :
                       user.role === 'admin' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'
                     ]"
                   >
                     {{ user.role === 'admin' ? 'Administrator' : 'Benutzer' }}
                   </span>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              <td :class="[
+                'px-6 py-4 whitespace-nowrap text-sm',
+                !user.active ? 'text-gray-500' : 'text-gray-900'
+              ]">
                 {{ formatDate(user.createdAt) }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
