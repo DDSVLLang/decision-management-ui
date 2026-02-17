@@ -21,6 +21,7 @@ export interface Decision {
   implementationNotes?: string
   reports: Report[]
   deleted: boolean
+  canBeCompleted?: boolean
   createdBy?: string
   completedAt?: string
   completedBy?: string
@@ -57,6 +58,7 @@ function mapApiDecisionToDecision(apiDecision: ApiDecision): Decision {
     content: apiDecision.content,
     reports: apiDecision.reports,
     deleted: apiDecision.deleted,
+    canBeCompleted: apiDecision.canBeCompleted,
     completedAt: apiDecision.completedAt
   }
 }
@@ -188,6 +190,20 @@ export const useDecisionStore = defineStore('decisions', () => {
     }
   }
 
+  async function toggleCanBeCompleted(id: string, canBeCompleted: boolean) {
+    try {
+      const response = await DecisionsApi.updateDecision(id, { canBeCompleted })
+      const index = decisions.value.findIndex(d => d.id === id)
+      if (index !== -1 && response.data) {
+        decisions.value[index] = mapApiDecisionToDecision(response.data)
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Fehler beim Aktualisieren des Beschlusses'
+      console.error('Error toggling canBeCompleted:', err)
+      throw err
+    }
+  }
+
   function addReport(decisionId: string, report: Omit<Report, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'createdBy' | 'createdByUser'>) {
     const authStore = useAuthStore()
     const decision = decisions.value.find(d => d.id === decisionId)
@@ -280,6 +296,7 @@ export const useDecisionStore = defineStore('decisions', () => {
     updateDecision,
     setDecisionCompleted,
     deleteDecision,
+    toggleCanBeCompleted,
     addReport,
     updateReport,
     getCurrentYear,

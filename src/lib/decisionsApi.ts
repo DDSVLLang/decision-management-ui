@@ -33,6 +33,7 @@ export interface Decision {
     content: string
     reports: Report[]
     deleted: boolean
+    canBeCompleted?: boolean
     completedAt?: string
 }
 
@@ -113,6 +114,7 @@ export interface UpdateDecisionRequest {
     status?: string
     content?: string
     dueDate?: string
+    canBeCompleted?: boolean
 }
 
 export interface UpdateDecisionResponse {

@@ -29,22 +29,14 @@
           </button>
           <h2 class="text-2xl font-bold text-gray-900">Beschluss #{{ decision.id }}</h2>
           <StatusBadge :status="decision.status" />
+          <span
+              v-if="authStore.isAdmin && decision.canBeCompleted && decision.status !== 'completed'"
+              class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+          >
+            Beschluss kann abgeschlossen werden
+          </span>
         </div>
         <div class="flex items-center space-x-3">
-          <!-- Completion Checkbox for Users -->
-          <label
-              v-if="!authStore.isAdmin && !isCompleted"
-              class="flex items-center px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 cursor-pointer"
-          >
-            <input
-                type="checkbox"
-                :checked="false"
-                @change="toggleCompleted"
-                class="h-4 w-4 text-success-600 focus:ring-success-500 border-gray-300 rounded"
-            />
-            <span class="ml-2 text-sm text-gray-700">Als erledigt markieren</span>
-          </label>
-
           <!-- Admin Status Control -->
           <Menu v-if="authStore.isAdmin" as="div" class="relative inline-block text-left">
             <div>
@@ -204,20 +196,6 @@
                 />
                 </div>
                 <div class="mt-4 flex items-center space-x-2">
-                  <label
-                      v-if="!authStore.isAdmin && !isCompleted"
-                      class="text-sm font-medium text-gray-700"
-                  >
-                    <input
-                        type="checkbox"
-                        :checked="false"
-                        @change="toggleCompleted"
-                        class="h-4 w-4 text-success-600 focus:ring-success-500 border-gray-300 rounded"
-                    />
-                    <span class="ml-2 text-sm text-gray-700">Als erledigt markieren</span>
-                  </label>
-                </div>
-                <div class="mt-4 flex items-center space-x-2">
                   <label class="text-sm font-medium text-gray-700">Voraussichtlich erledigt bis:</label>
                   <select
                       v-model="currentReportQuarter"
@@ -229,6 +207,22 @@
                     </option>
                   </select>
                 </div>
+                <div class="mt-4 flex items-center space-x-2">
+                  <!-- Completion Checkbox for Users -->
+                  <label
+                      v-if="!authStore.isAdmin && !isCompleted"
+                      class="text-sm font-medium text-gray-700"
+                  >
+                    <input
+                        type="checkbox"
+                        :checked="decision.canBeCompleted || false"
+                        @change="toggleCanBeCompleted"
+                        class="h-4 w-4 text-success-600 focus:ring-success-500 border-gray-300 rounded"
+                    />
+                    <span class="ml-2 text-sm text-gray-700">Als erledigt markieren</span>
+                  </label>
+                </div>
+
                 <div class="mt-4 flex justify-end space-x-2">
                   <button
                       @click="saveCurrentReport"
@@ -399,9 +393,13 @@ function setCompleted(completed: boolean) {
   }
 }
 
-function toggleCompleted() {
+async function toggleCanBeCompleted() {
   if (decision.value) {
-    store.setDecisionCompleted(decision.value.id, decision.value.status !== 'completed')
+    try {
+      await store.toggleCanBeCompleted(decision.value.id, !decision.value.canBeCompleted)
+    } catch (err) {
+      console.error('Failed to toggle canBeCompleted:', err)
+    }
   }
 }
 
