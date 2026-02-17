@@ -1,6 +1,11 @@
 <template>
   <AppLayout>
-    <div v-if="!hasAccess" class="p-6">
+    <div v-if="isLoading" class="p-6">
+      <div class="text-center">
+        <p class="text-gray-500">Lade Beschluss...</p>
+      </div>
+    </div>
+    <div v-else-if="!hasAccess" class="p-6">
       <div class="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
         <h2 class="text-xl font-bold text-red-900 mb-2">Zugriff verweigert</h2>
         <p class="text-red-700 mb-4">Sie haben keine Berechtigung, diesen Beschluss zu sehen.</p>
@@ -115,7 +120,7 @@
                 <p class="mt-1 text-sm text-gray-900">{{ decision.printMatter }}</p>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700">Zuständige Fachbereiche</label>
+                <label class="block text-sm font-medium text-gray-700">Zuständige Organisationseinheiten</label>
                 <div class="mt-1 flex flex-wrap gap-2">
                   <span
                       v-for="dept in decision.responsibleDepartments"
@@ -292,7 +297,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useDecisionStore } from '../stores/decisions'
 import { useAuthStore } from '../stores/auth'
@@ -304,6 +309,7 @@ import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue'
 const route = useRoute()
 const store = useDecisionStore()
 const authStore = useAuthStore()
+const isLoading = ref(false)
 
 const decision = computed(() =>
     store.decisions.find(d => d.id === route.params.id as string)
@@ -313,7 +319,15 @@ const hasAccess = computed(() => {
   if (!decision.value) return false
   if (authStore.isAdmin) return true
   if (!authStore.user?.department) return false
-  return decision.value.responsibleDepartments.includes(authStore.user.department)
+  return decision.value.responsibleDepartments.includes(authStore.user.department?.name)
+})
+
+onMounted(async () => {
+  if (!decision.value) {
+    isLoading.value = true
+    await store.fetchDecisions({ page: 0, size: 100 }) // TODO
+    isLoading.value = false
+  }
 })
 
 const isCompleted = computed(() => decision.value?.status === 'completed')

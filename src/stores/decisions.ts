@@ -49,7 +49,7 @@ function mapApiDecisionToDecision(apiDecision: ApiDecision): Decision {
     decisionDate: apiDecision.decisionDate,
     printMatter: apiDecision.printMatter,
     responsibleDepartment: apiDecision.decisionDepartment,
-    responsibleDepartments: apiDecision.departments.map(d => d.shortName),
+    responsibleDepartments: apiDecision.departments.map(d => d.name),
     departments: apiDecision.departments,
     topic: apiDecision.decisionTopic,
     status: apiDecision.status,

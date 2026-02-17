@@ -1,3 +1,5 @@
+import {Department} from "./decisionsApi.ts";
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 
 export interface LoginCredentials {
@@ -12,7 +14,7 @@ export interface UserDto {
     lastName: string
     fullName: string
     role: string
-    department: string | null
+    department: Department | null
     responsibleDepartment: string | null
 }
 

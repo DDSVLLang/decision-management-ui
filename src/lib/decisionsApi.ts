@@ -81,6 +81,50 @@ export interface DecisionSearchParams {
     keyword?: string
 }
 
+export interface CreateDecisionRequest {
+    title: string
+    decisionDate: string
+    printMatter: string
+    responsibleDepartments: string[]
+    decisionCommittee: string
+    topic: string
+    status: string
+    content: string
+    dueDate?: string
+}
+
+export interface CreateDecisionResponse {
+    success: boolean
+    message: string
+    data: Decision & {
+        dueDate?: string
+        createdBy: string
+    }
+    timestamp: string
+}
+
+export interface UpdateDecisionRequest {
+    title?: string
+    decisionDate?: string
+    printMatter?: string
+    responsibleDepartments?: string[]
+    decisionCommittee?: string
+    topic?: string
+    status?: string
+    content?: string
+    dueDate?: string
+}
+
+export interface UpdateDecisionResponse {
+    success: boolean
+    message: string
+    data: Decision & {
+        dueDate?: string
+        createdBy: string
+    }
+    timestamp: string
+}
+
 export class DecisionsApi {
     static async searchDecisions(params: DecisionSearchParams = {}): Promise<DecisionSearchResponse> {
         try {
@@ -111,6 +155,26 @@ export class DecisionsApi {
             return response
         } catch (error: any) {
             console.error('Error searching decisions:', error)
+            throw error
+        }
+    }
+
+    static async createDecision(data: CreateDecisionRequest): Promise<CreateDecisionResponse> {
+        try {
+            const response = await api.post<CreateDecisionResponse>('/api/v1/decision', data)
+            return response
+        } catch (error: any) {
+            console.error('Error creating decision:', error)
+            throw error
+        }
+    }
+
+    static async updateDecision(id: string, data: UpdateDecisionRequest): Promise<UpdateDecisionResponse> {
+        try {
+            const response = await api.put<UpdateDecisionResponse>(`/api/v1/decision/${id}`, data)
+            return response
+        } catch (error: any) {
+            console.error('Error updating decision:', error)
             throw error
         }
     }

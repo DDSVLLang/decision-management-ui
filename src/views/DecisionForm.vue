@@ -62,20 +62,20 @@
                 <p v-if="printMatterError" class="mt-1 text-sm text-red-600">
                   {{ printMatterError }}
                 </p>
-                <p v-else class="mt-1 text-xs text-gray-500">
+                <p v-else class="mt-1 text-sm text-gray-400">
                   Format: Zahl-Zahl/Römisch/Zahl oder Zahl/Römisch/Zahl
                 </p>
               </div>
 
               <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Zuständige Fachbereiche* (mindestens einen auswählen)</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Zuständige Organisationseinheiten* (mindestens einen auswählen)</label>
                 <Listbox v-model="form.responsibleDepartments" multiple>
                   <div class="relative">
                     <ListboxButton
                         class="relative w-full cursor-pointer rounded-md bg-white py-2 pl-3 pr-10 text-left border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     >
                       <span v-if="form.responsibleDepartments.length === 0" class="block truncate text-gray-400">
-                        Fachbereiche auswählen...
+                        Organisationseinheiten auswählen...
                       </span>
                       <span v-else class="flex flex-wrap gap-1">
                         <span
@@ -133,12 +133,12 @@
                   </div>
                 </Listbox>
                 <p v-if="form.responsibleDepartments.length === 0" class="mt-1 text-sm text-red-600">
-                  Bitte mindestens einen Fachbereich auswählen
+                  Bitte mindestens eine Organisationseinheit auswählen
                 </p>
               </div>
 
               <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Thema*</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Thema* <small class="mt-1 text-sm text-gray-400">(Für Beschlüsse ohne Themen Unbekannt auswählen)</small></label>
                 <select
                     v-model="form.topic"
                     required
@@ -225,6 +225,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useDecisionStore } from '../stores/decisions'
+import { DecisionsApi } from '../lib/decisionsApi'
 import AppLayout from '../components/AppLayout.vue'
 import { ArrowLeftIcon, CheckIcon, ChevronUpDownIcon } from '@heroicons/vue/24/outline'
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/vue'
@@ -295,7 +296,7 @@ async function saveDecision() {
   }
 
   if (form.value.responsibleDepartments.length === 0) {
-    errorMessage.value = 'Bitte mindestens einen Fachbereich auswählen.'
+    errorMessage.value = 'Bitte mindestens eine Organisationseinheit auswählen.'
     return
   }
 
@@ -308,30 +309,47 @@ async function saveDecision() {
   errorMessage.value = ''
 
   try {
-    await new Promise(resolve => setTimeout(resolve, 300))
-
-    const decisionData = {
-      title: form.value.title,
-      decisionBody: form.value.decisionBody,
-      decisionDate: form.value.decisionDate,
-      printMatter: form.value.printMatter,
-      responsibleDepartment: form.value.responsibleDepartments[0],
-      responsibleDepartments: form.value.responsibleDepartments,
-      topic: form.value.topic,
-      content: form.value.content,
-      dueDate: form.value.dueDate || undefined,
-      implementationNotes: form.value.implementationNotes || undefined,
-      departments: [],
-      priority: 'medium',
-      deleted: false
-    }
-
     if (isEdit.value && decisionId.value) {
-      store.updateDecision(decisionId.value, decisionData)
-      router.push(`/decisions/${decisionId.value}`)
+      const requestData = {
+        title: form.value.title,
+        decisionDate: form.value.decisionDate,
+        printMatter: form.value.printMatter,
+        responsibleDepartments: form.value.responsibleDepartments,
+        decisionCommittee: form.value.decisionBody,
+        topic: form.value.topic,
+        content: form.value.content,
+        ...(form.value.dueDate && { dueDate: form.value.dueDate })
+      }
+
+      const response = await DecisionsApi.updateDecision(decisionId.value, requestData)
+
+      if (response.success && response.data) {
+        await store.fetchDecisions({ page: 0, size: 20 })
+        router.push(`/decisions/${decisionId.value}`)
+      } else {
+        throw new Error('Beschluss konnte nicht aktualisiert werden')
+      }
     } else {
-      const newDecision = store.addDecision(decisionData)
-      router.push(`/decisions/${newDecision.id}`)
+      const requestData = {
+        title: form.value.title,
+        decisionDate: form.value.decisionDate,
+        printMatter: form.value.printMatter,
+        responsibleDepartments: form.value.responsibleDepartments,
+        decisionCommittee: form.value.decisionBody,
+        topic: form.value.topic,
+        status: 'pending',
+        content: form.value.content,
+        ...(form.value.dueDate && { dueDate: form.value.dueDate })
+      }
+
+      const response = await DecisionsApi.createDecision(requestData)
+
+      if (response.success && response.data) {
+        await store.fetchDecisions({ page: 0, size: 20 })
+        router.push(`/decisions/${response.data.id}`)
+      } else {
+        throw new Error('Beschluss konnte nicht erstellt werden')
+      }
     }
   } catch (error: any) {
     console.error('Error saving decision:', error)

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { AuthApi, type UserDto } from '../lib/authApi'
+import {Department} from "../lib/decisionsApi.ts";
 
 export interface User {
     id: string
@@ -9,7 +10,7 @@ export interface User {
     lastName: string
     fullName: string
     role: string
-    department?: string | null
+    department?: Department | null
     responsibleDepartment?: string | null
 }
 
