@@ -76,6 +76,16 @@
             </select>
           </div>
         </div>
+        <div v-if="authStore.isAdmin" class="mt-4 pt-4 border-t border-gray-200">
+          <label class="flex items-center cursor-pointer">
+            <input
+                v-model="showDeletedFilter"
+                type="checkbox"
+                class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+            />
+            <span class="ml-2 text-sm font-medium text-gray-700">Gelöschte Beschlüsse anzeigen</span>
+          </label>
+        </div>
       </div>
 
       <!-- Loading State -->
@@ -320,6 +330,7 @@ const statusFilter = ref('')
 const committeeFilter = ref('')
 const departmentFilter = ref('')
 const topicFilter = ref('')
+const showDeletedFilter = ref(false)
 const showDeleteDialog = ref(false)
 const itemToDelete = ref<Decision | null>(null)
 
@@ -337,6 +348,10 @@ const filteredDecisions = computed(() => {
     const userDepartment = authStore.user?.responsibleDepartment
     if (userDepartment) {
       filtered = filtered.filter(d => d.responsibleDepartments.includes(userDepartment))
+    }
+  } else {
+    if (!showDeletedFilter.value) {
+      filtered = filtered.filter(d => !d.deleted)
     }
   }
 
@@ -400,10 +415,14 @@ function closeDeleteDialog() {
   itemToDelete.value = null
 }
 
-function confirmDelete() {
+async function confirmDelete() {
   if (itemToDelete.value) {
-    store.deleteDecision(itemToDelete.value.id)
-    closeDeleteDialog()
+    try {
+      await store.deleteDecision(itemToDelete.value.id)
+      closeDeleteDialog()
+    } catch (err) {
+      console.error('Failed to delete decision:', err)
+    }
   }
 }
 

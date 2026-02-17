@@ -174,10 +174,17 @@ export const useDecisionStore = defineStore('decisions', () => {
     return null
   }
 
-  function deleteDecision(id: string) {
-    const index = decisions.value.findIndex(d => d.id === id)
-    if (index !== -1) {
-      decisions.value[index].deleted = true
+  async function deleteDecision(id: string) {
+    try {
+      await DecisionsApi.deleteDecision(id)
+      const index = decisions.value.findIndex(d => d.id === id)
+      if (index !== -1) {
+        decisions.value[index].deleted = true
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Fehler beim Löschen des Beschlusses'
+      console.error('Error deleting decision:', err)
+      throw err
     }
   }
 

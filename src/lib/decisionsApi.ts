@@ -125,6 +125,13 @@ export interface UpdateDecisionResponse {
     timestamp: string
 }
 
+export interface DeleteDecisionResponse {
+    success: boolean
+    message: string
+    data: null
+    timestamp: string
+}
+
 export class DecisionsApi {
     static async searchDecisions(params: DecisionSearchParams = {}): Promise<DecisionSearchResponse> {
         try {
@@ -175,6 +182,16 @@ export class DecisionsApi {
             return response
         } catch (error: any) {
             console.error('Error updating decision:', error)
+            throw error
+        }
+    }
+
+    static async deleteDecision(id: string): Promise<DeleteDecisionResponse> {
+        try {
+            const response = await api.delete<DeleteDecisionResponse>(`/api/v1/decision/${id}`)
+            return response
+        } catch (error: any) {
+            console.error('Error deleting decision:', error)
             throw error
         }
     }

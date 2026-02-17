@@ -204,6 +204,20 @@
                 />
                 </div>
                 <div class="mt-4 flex items-center space-x-2">
+                  <label
+                      v-if="!authStore.isAdmin && !isCompleted"
+                      class="text-sm font-medium text-gray-700"
+                  >
+                    <input
+                        type="checkbox"
+                        :checked="false"
+                        @change="toggleCompleted"
+                        class="h-4 w-4 text-success-600 focus:ring-success-500 border-gray-300 rounded"
+                    />
+                    <span class="ml-2 text-sm text-gray-700">Als erledigt markieren</span>
+                  </label>
+                </div>
+                <div class="mt-4 flex items-center space-x-2">
                   <label class="text-sm font-medium text-gray-700">Voraussichtlich erledigt bis:</label>
                   <select
                       v-model="currentReportQuarter"
