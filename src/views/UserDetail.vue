@@ -18,7 +18,6 @@
               <h2 class="text-2xl font-normal tracking-[0.08em] text-gray-800">
                 {{ user.firstName }} {{ user.lastName }}
               </h2>
-              <p class="mt-1 text-sm text-gray-500">Benutzer-ID: {{ user.id }}</p>
             </div>
             <button
                 @click="$router.push(`/users/${user.id}/edit`)"

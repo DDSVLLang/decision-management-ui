@@ -27,7 +27,7 @@
             <ArrowLeftIcon class="h-5 w-5 mr-2" />
             Zurück
           </button>
-          <h2 class="text-2xl font-bold text-gray-900">Beschluss #{{ decision.id }}</h2>
+          <h2 class="text-2xl font-bold text-gray-900">Beschluss</h2>
           <StatusBadge :status="decision.status" />
           <span
               v-if="authStore.isAdmin && decision.canBeCompleted && decision.status !== 'completed'"
@@ -187,19 +187,30 @@
                     </option>
                   </select>
                 </div>
-                <div class="border rounded-lg p-4 min-h-[200px] bg-white">
-                <textarea
-                    v-model="currentReportContent"
-                    rows="8"
-                    class="w-full text-sm text-gray-700 border-none resize-none focus:outline-none"
-                    placeholder="Bericht für das ausgewählte Jahr eingeben..."
-                />
+
+                <!-- Message for admins when no report exists -->
+                <div v-if="authStore.isAdmin && !currentReport" class="border rounded-lg p-4 min-h-[200px] bg-gray-50 flex items-center justify-center">
+                  <p class="text-sm text-gray-500 text-center">
+                    Nur Benutzer können neue Berichte erstellen.
+                  </p>
                 </div>
-                <div class="mt-4 flex items-center space-x-2">
+
+                <!-- Editable textarea -->
+                <div v-else class="border rounded-lg p-4 min-h-[200px] bg-white">
+                  <textarea
+                      v-model="currentReportContent"
+                      rows="8"
+                      :disabled="authStore.isAdmin && !currentReport"
+                      class="w-full text-sm text-gray-700 border-none resize-none focus:outline-none disabled:bg-gray-50 disabled:text-gray-500"
+                      :placeholder="authStore.isAdmin && !currentReport ? 'Kein Bericht vorhanden' : 'Bericht für das ausgewählte Jahr eingeben...'"
+                  />
+                </div>
+                <div v-if="!authStore.isAdmin || currentReport" class="mt-4 flex items-center space-x-2">
                   <label class="text-sm font-medium text-gray-700">Voraussichtlich erledigt bis:</label>
                   <select
                       v-model="currentReportQuarter"
-                      class="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      :disabled="authStore.isAdmin && !currentReport"
+                      class="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100 disabled:text-gray-500"
                   >
                     <option value="">Nicht angegeben</option>
                     <option v-for="quarter in quarterOptions" :key="quarter" :value="quarter">
@@ -223,19 +234,25 @@
                   </label>
                 </div>
 
-                <div class="mt-4 flex justify-end space-x-2">
+                <div v-if="!authStore.isAdmin || currentReport" class="mt-4 flex justify-end space-x-2">
                   <button
                       @click="saveCurrentReport"
-                      class="px-4 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors duration-200"
+                      :disabled="authStore.isAdmin && !currentReport"
+                      :class="[
+                        'px-4 py-2 text-sm rounded-lg transition-colors duration-200',
+                        authStore.isAdmin && !currentReport
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-gray-600 text-white hover:bg-gray-700'
+                      ]"
                   >
                     Bericht speichern
                   </button>
                   <button
                       @click="completeCurrentReport"
-                      :disabled="isReportContentEmpty"
+                      :disabled="isReportContentEmpty || (authStore.isAdmin && !currentReport)"
                       :class="[
                     'px-4 py-2 text-sm rounded-lg transition-colors duration-200',
-                    isReportContentEmpty
+                    isReportContentEmpty || (authStore.isAdmin && !currentReport)
                       ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       : 'bg-primary-600 text-white hover:bg-primary-700'
                   ]"
@@ -413,16 +430,26 @@ function saveCurrentReport() {
   }
 
   if (currentReport.value) {
-    // Update existing report
+    // Update existing report (both users and admins can update)
     store.updateReport(decision.value.id, currentReport.value.id, reportData)
   } else {
-    // Add new report
+    // Add new report - only users can create new reports
+    if (authStore.isAdmin) {
+      alert('Nur Benutzer können neue Berichte erstellen.')
+      return
+    }
     store.addReport(decision.value.id, reportData)
   }
 }
 
 function completeCurrentReport() {
   if (!decision.value) return
+
+  // Check permissions - admins can only complete existing reports
+  if (authStore.isAdmin && !currentReport.value) {
+    alert('Nur Benutzer können neue Berichte erstellen.')
+    return
+  }
 
   // Show confirmation dialog
   const confirmed = confirm(`Möchten Sie den Bericht zum Jahr ${selectedYear.value} wirklich abschließen?`)

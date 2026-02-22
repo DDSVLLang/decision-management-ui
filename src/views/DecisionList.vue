@@ -105,9 +105,6 @@
             <thead class="bg-gray-50">
             <tr>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                ID
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Titel
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -137,9 +134,6 @@
               ]"
                 @click="$router.push(`/decisions/${decision.id}`)"
             >
-              <td :class="['px-6 py-4 whitespace-nowrap text-sm font-medium', decision.deleted ? 'text-gray-400' : 'text-gray-900']">
-                {{ decision.id }}
-              </td>
               <td :class="['px-6 py-4 text-sm', decision.deleted ? 'text-gray-400' : 'text-gray-900']">
                 <div class="max-w-xs truncate">
                   {{ decision.title }}
