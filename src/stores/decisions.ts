@@ -286,8 +286,9 @@ export const useDecisionStore = defineStore('decisions', () => {
   }
 
   function generateYearOptions(): string[] {
+    const now = new Date()
     const options: string[] = []
-    for (let year = 2010; year <= 2025; year++) {
+    for (let year = 2000; year <= now.getFullYear(); year++) {
       options.push(`${year}/${year + 1}`)
     }
     return options
