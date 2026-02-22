@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useAuthStore } from './auth'
 import { useManagementStore } from './management'
 import { DecisionsApi, type Decision as ApiDecision, type Department, type DecisionSearchParams } from '../lib/decisionsApi'
+import { ReportsApi } from '../lib/reportsApi'
 
 export interface Decision {
   id: string
@@ -204,42 +205,71 @@ export const useDecisionStore = defineStore('decisions', () => {
     }
   }
 
-  function addReport(decisionId: string, report: Omit<Report, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'createdBy' | 'createdByUser'>) {
-    const authStore = useAuthStore()
-    const decision = decisions.value.find(d => d.id === decisionId)
-    if (decision) {
-      if (!decision.reports) {
-        decision.reports = []
+  async function addReport(decisionId: string, report: Omit<Report, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'createdBy' | 'createdByUser'>) {
+    try {
+      const response = await ReportsApi.createReport(decisionId, {
+        title: `Report ${report.year}`,
+        year: report.year,
+        content: report.content,
+        expectedCompletionQuarter: report.expectedCompletionQuarter
+      })
+
+      const decision = decisions.value.find(d => d.id === decisionId)
+      if (decision) {
+        if (!decision.reports) {
+          decision.reports = []
+        }
+        const newReport: Report = {
+          id: response.data.id,
+          year: response.data.year,
+          content: response.data.content,
+          status: response.data.status,
+          expectedCompletionQuarter: response.data.expectedCompletionQuarter,
+          createdAt: response.data.createdAt,
+          updatedAt: response.data.updatedAt,
+          createdByUser: {
+            firstName: response.data.createdByUser.firstName,
+            lastName: response.data.createdByUser.lastName
+          }
+        }
+        decision.reports.push(newReport)
+        decision.status = calculateStatus(decision)
       }
-      const now = new Date().toISOString()
-      const newReport: Report = {
-        ...report,
-        id: Date.now().toString(),
-        status: 'DRAFT',
-        createdAt: now,
-        updatedAt: now,
-        createdBy: authStore.user?.id,
-        createdByUser: authStore.user ? {
-          firstName: authStore.user.firstName,
-          lastName: authStore.user.lastName
-        } : undefined
-      }
-      decision.reports.push(newReport)
-      decision.status = calculateStatus(decision)
+    } catch (err: any) {
+      error.value = err.message || 'Fehler beim Erstellen des Berichts'
+      console.error('Error creating report:', err)
+      throw err
     }
   }
 
-  function updateReport(decisionId: string, reportId: string, updates: Partial<Report>) {
-    const decision = decisions.value.find(d => d.id === decisionId)
-    if (decision && decision.reports) {
-      const reportIndex = decision.reports.findIndex(r => r.id === reportId)
-      if (reportIndex !== -1) {
-        decision.reports[reportIndex] = {
-          ...decision.reports[reportIndex],
-          ...updates,
-          updatedAt: new Date().toISOString()
+  async function updateReport(decisionId: string, reportId: string, updates: Partial<Report>) {
+    try {
+      const response = await ReportsApi.updateReport(decisionId, reportId, {
+        title: updates.year ? `Report ${updates.year}` : undefined,
+        year: updates.year,
+        content: updates.content,
+        expectedCompletionQuarter: updates.expectedCompletionQuarter
+      })
+
+      const decision = decisions.value.find(d => d.id === decisionId)
+      if (decision && decision.reports) {
+        const reportIndex = decision.reports.findIndex(r => r.id === reportId)
+        if (reportIndex !== -1) {
+          decision.reports[reportIndex] = {
+            id: response.data.id,
+            year: response.data.year,
+            content: response.data.content,
+            status: response.data.status,
+            expectedCompletionQuarter: response.data.expectedCompletionQuarter,
+            createdAt: response.data.createdAt,
+            updatedAt: response.data.updatedAt,
+          }
         }
       }
+    } catch (err: any) {
+      error.value = err.message || 'Fehler beim Aktualisieren des Berichts'
+      console.error('Error updating report:', err)
+      throw err
     }
   }
 

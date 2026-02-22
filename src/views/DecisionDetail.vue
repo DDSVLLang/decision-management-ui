@@ -14,7 +14,7 @@
             class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
         >
           Zurück zur Übersicht
-        </button>
+        </button>‚
       </div>
     </div>
     <div class="p-6" v-else-if="decision">
@@ -326,6 +326,7 @@ import { computed, ref, watch, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useDecisionStore } from '../stores/decisions'
 import { useAuthStore } from '../stores/auth'
+import { useToastStore } from '../stores/toast'
 import AppLayout from '../components/AppLayout.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import { ArrowLeftIcon, PencilIcon, CheckIcon, ChevronDownIcon } from '@heroicons/vue/24/outline'
@@ -334,6 +335,7 @@ import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue'
 const route = useRoute()
 const store = useDecisionStore()
 const authStore = useAuthStore()
+const toastStore = useToastStore()
 const isLoading = ref(false)
 
 const decision = computed(() =>
@@ -420,7 +422,7 @@ async function toggleCanBeCompleted() {
   }
 }
 
-function saveCurrentReport() {
+async function saveCurrentReport() {
   if (!decision.value) return
 
   const reportData = {
@@ -429,20 +431,24 @@ function saveCurrentReport() {
     expectedCompletionQuarter: currentReportQuarter.value || undefined
   }
 
-  if (currentReport.value) {
-    // Update existing report (both users and admins can update)
-    store.updateReport(decision.value.id, currentReport.value.id, reportData)
-  } else {
-    // Add new report - only users can create new reports
-    if (authStore.isAdmin) {
-      alert('Nur Benutzer können neue Berichte erstellen.')
-      return
+  try {
+    if (currentReport.value) {
+      await store.updateReport(decision.value.id, currentReport.value.id, reportData)
+      toastStore.success('Bericht erfolgreich aktualisiert', 5000)
+    } else {
+      if (authStore.isAdmin) {
+        toastStore.error('Nur Benutzer können neue Berichte erstellen.', 5000)
+        return
+      }
+      await store.addReport(decision.value.id, reportData)
+      toastStore.success('Bericht erfolgreich erstellt', 5000)
     }
-    store.addReport(decision.value.id, reportData)
+  } catch (error: any) {
+    toastStore.error(`Fehler beim Speichern: ${error.message}`, 5000)
   }
 }
 
-function completeCurrentReport() {
+async function completeCurrentReport() {
   if (!decision.value) return
 
   // Check permissions - admins can only complete existing reports
@@ -456,7 +462,7 @@ function completeCurrentReport() {
   if (!confirmed) return
 
   // First save the current report
-  saveCurrentReport()
+  await saveCurrentReport()
 
   // Then switch to a different year to show the saved report in the previous reports list
   // Find the next available year that doesn't have a report yet
