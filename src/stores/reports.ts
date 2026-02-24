@@ -128,6 +128,15 @@ export const useReportsStore = defineStore('reports', () => {
             .sort((a, b) => new Date(a.decisionDate).getTime() - new Date(b.decisionDate).getTime())
     )
 
+    const decisionsWithoutReportForSelectedYear = computed(() =>
+        decisions.value.filter(d => {
+            if (d.status === 'completed') return false
+            if (!d.reports || d.reports.length === 0) return true
+            const hasReportForYear = d.reports.some(r => r.year === selectedYear.value)
+            return !hasReportForYear
+        })
+    )
+
     function getCurrentYear(): string {
         const now = new Date()
         const currentYear = now.getFullYear()
@@ -179,6 +188,7 @@ export const useReportsStore = defineStore('reports', () => {
         inProgressDecisions,
         overdueDecisions,
         reportDecisions,
+        decisionsWithoutReportForSelectedYear,
         fetchReportDecisions,
         getCurrentYear,
         generateYearOptions,

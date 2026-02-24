@@ -24,15 +24,21 @@
             </select>
           </div>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div class="bg-warning-50 p-6 rounded-lg">
             <p class="text-sm text-warning-600">In Bearbeitung</p>
             <p class="text-2xl font-bold text-warning-900">{{ reportsStore.inProgressDecisions.length }}</p>
           </div>
 
-          <div class="bg-gray-50 p-6 rounded-lg">
-            <p class="text-sm text-gray-600">Gesamt offen</p>
-            <p class="text-2xl font-bold text-gray-900">{{ reportsStore.pendingDecisions.length }}</p>
+          <div class="bg-error-50 p-6 rounded-lg">
+            <p class="text-sm text-error-600">Fehlende Sachstand</p>
+            <p class="text-2xl font-bold text-error-900">{{ reportsStore.decisionsWithoutReportForSelectedYear.length }}</p>
+            <p class="text-xs text-error-600 mt-1">Beschlüsse ohne Bericht für {{ reportsStore.selectedYear }}</p>
+          </div>
+
+          <div class="bg-primary-50 p-6 rounded-lg">
+            <p class="text-sm text-primary-600">Gesamt</p>
+            <p class="text-2xl font-bold text-primary-900">{{ reportsStore.decisions.length }}</p>
           </div>
         </div>
       </div>
@@ -64,7 +70,7 @@
                   Drucksache
                 </th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  zust. Fachbereich
+                  zust. OE
                 </th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   vor. erledigt bis:
@@ -75,7 +81,9 @@
               <tr
                   v-for="decision in reportsStore.reportDecisions"
                   :key="decision.id"
-                  class="hover:bg-gray-50"
+                  :class="[
+                    isMissingReport(decision) ? 'bg-error-50 hover:bg-error-100' : 'hover:bg-gray-50'
+                  ]"
               >
                 <td class="px-6 py-4 text-sm">
                   <div class="space-y-2">
@@ -246,6 +254,14 @@ const visiblePages = computed(() => {
 onMounted(() => {
   reportsStore.fetchReportDecisions()
 })
+
+function isMissingReport(decision: any): boolean {
+  if (!decision.reports || decision.reports.length === 0) {
+    return true
+  }
+  const hasReportForYear = decision.reports.some((report: any) => report.year === reportsStore.selectedYear)
+  return !hasReportForYear
+}
 
 function getSelectedYearReport(decision: any): string {
   if (!decision.reports || decision.reports.length === 0) {
