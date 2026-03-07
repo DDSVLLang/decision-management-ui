@@ -81,6 +81,8 @@ export interface DecisionSearchParams {
     department?: string
     topic?: string
     keyword?: string
+    printMatterYear?: string
+    printMatterElectionPeriod?: string
 }
 
 export interface CreateDecisionRequest {
@@ -160,6 +162,14 @@ export class DecisionsApi {
             }
             if (params.keyword) {
                 queryParams.append('keyword', params.keyword)
+            }
+
+            if (params.printMatterElectionPeriod) {
+                queryParams.append('printMatterElectionPeriod', params.printMatterElectionPeriod)
+            }
+
+            if (params.printMatterYear) {
+                queryParams.append('printMatterYear', params.printMatterYear)
             }
 
             const response = await api.get<DecisionSearchResponse>(

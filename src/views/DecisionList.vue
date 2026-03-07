@@ -17,7 +17,7 @@
 
       <!-- Filters -->
       <div class="bg-white rounded-lg shadow mb-6 p-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Suchbegriff</label>
             <input
@@ -26,6 +26,30 @@
                 placeholder="Titel, Beschreibung..."
                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Wahlperiode</label>
+            <select
+                v-model="electionPeriodFilter"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            >
+              <option value="">Alle</option>
+              <option v-for="period in romanNumerals" :key="period" :value="period">
+                {{ period }}
+              </option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Jahr</label>
+            <select
+                v-model="yearFilter"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            >
+              <option value="">Alle</option>
+              <option v-for="year in years" :key="year" :value="year">
+                {{ year }}
+              </option>
+            </select>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
@@ -326,6 +350,8 @@ const store = useDecisionStore()
 const authStore = useAuthStore()
 
 const searchTerm = ref('')
+const electionPeriodFilter = ref('')
+const yearFilter = ref('')
 const statusFilter = ref('')
 const committeeFilter = ref('')
 const departmentFilter = ref('')
@@ -333,6 +359,16 @@ const topicFilter = ref('')
 const showDeletedFilter = ref(false)
 const showDeleteDialog = ref(false)
 const itemToDelete = ref<Decision | null>(null)
+
+const romanNumerals = [
+  'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X',
+  'XI', 'XII', 'XIII', 'XIV', 'XV', 'XVI', 'XVII', 'XVIII', 'XIX', 'XX',
+  'XXI', 'XXII', 'XXIII', 'XXIV', 'XXV', 'XXVI', 'XXVII', 'XXVIII', 'XXIX', 'XXX',
+  'XXXI', 'XXXII', 'XXXIII', 'XXXIV', 'XXXV', 'XXXVI', 'XXXVII', 'XXXVIII', 'XXXIX', 'XL',
+  'XLI', 'XLII', 'XLIII', 'XLIV', 'XLV', 'XLVI', 'XLVII', 'XLVIII', 'XLIX', 'L'
+]
+
+const years = Array.from({ length: 101 }, (_, i) => 1999 + i)
 
 const decisions = computed(() => store.decisions)
 const committees = computed(() => store.committees)
@@ -364,6 +400,12 @@ function performSearch() {
     size: 20
   }
 
+  if (electionPeriodFilter.value) {
+    params.printMatterElectionPeriod = electionPeriodFilter.value
+  }
+  if (yearFilter.value) {
+    params.printMatterYear = String(yearFilter.value).slice(-2)
+  }
   if (statusFilter.value === 'canBeCompleted') {
     params.canBeCompleted = 'true'
     params.status = 'in-progress'
@@ -394,7 +436,7 @@ onMounted(async () => {
   performSearch()
 })
 
-watch([statusFilter, committeeFilter, departmentFilter, topicFilter], () => {
+watch([electionPeriodFilter, yearFilter, statusFilter, committeeFilter, departmentFilter, topicFilter], () => {
   performSearch()
 })
 
@@ -435,6 +477,12 @@ function goToPage(page: number) {
     size: 20
   }
 
+  if (electionPeriodFilter.value) {
+    params.printMatterElectionPeriod = electionPeriodFilter.value
+  }
+  if (yearFilter.value) {
+    params.printMatterYear = String(yearFilter.value).slice(-2)
+  }
   if (statusFilter.value) {
     if (statusFilter.value === 'canBeCompleted') {
       params.canBeCompleted = 'true'
