@@ -34,8 +34,6 @@ const statusClasses = computed(() => {
 const statusText = computed(() => {
   const status = props.status.toLowerCase()
   switch (status) {
-    case 'pending':
-      return 'Ausstehend'
     case 'in-progress':
     case 'in_progress':
       return 'In Bearbeitung'

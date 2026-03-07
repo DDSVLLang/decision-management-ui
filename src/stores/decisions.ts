@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { useAuthStore } from './auth'
 import { useManagementStore } from './management'
 import { DecisionsApi, type Decision as ApiDecision, type Department, type DecisionSearchParams } from '../lib/decisionsApi'
 import { ReportsApi } from '../lib/reportsApi'
@@ -154,27 +153,21 @@ export const useDecisionStore = defineStore('decisions', () => {
     return null
   }
 
-  function setDecisionCompleted(id: string, completed: boolean) {
-    const authStore = useAuthStore()
-    const index = decisions.value.findIndex(d => d.id === id)
-    if (index !== -1) {
-      if (completed) {
-        decisions.value[index].status = 'completed'
-        decisions.value[index].completedAt = new Date().toISOString()
-        decisions.value[index].completedBy = authStore.user?.id
-        decisions.value[index].completedByUser = authStore.user ? {
-          firstName: authStore.user.firstName,
-          lastName: authStore.user.lastName
-        } : undefined
-      } else {
-        decisions.value[index].status = calculateStatus(decisions.value[index], true)
-        decisions.value[index].completedAt = undefined
-        decisions.value[index].completedBy = undefined
-        decisions.value[index].completedByUser = undefined
+  async function setDecisionCompleted(id: string, completed: boolean) {
+    try {
+      const status = completed ? 'completed' : 'in-progress'
+      const response = await DecisionsApi.updateDecisionStatus(id, status)
+
+      const index = decisions.value.findIndex(d => d.id === id)
+      if (index !== -1 && response.data) {
+        decisions.value[index] = mapApiDecisionToDecision(response.data)
       }
       return decisions.value[index]
+    } catch (err: any) {
+      error.value = err.message || 'Fehler beim Aktualisieren des Status'
+      console.error('Error updating decision status:', err)
+      throw err
     }
-    return null
   }
 
   async function deleteDecision(id: string) {

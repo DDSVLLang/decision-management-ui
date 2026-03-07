@@ -87,7 +87,7 @@
               >
                 <td class="px-6 py-4 text-sm">
                   <div class="space-y-2">
-                    <div class="font-medium text-gray-900">{{ decision.topic }}</div>
+                    <div class="font-medium text-gray-900">{{ decision.topic === 'UNKNOWN' ? 'Unbekannt'  : decision.topic }}</div>
                     <div class="text-gray-900">{{ decision.title }}</div>
                     <div class="text-gray-600">
                       <div class="mb-2">

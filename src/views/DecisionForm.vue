@@ -337,7 +337,7 @@ async function saveDecision() {
         responsibleDepartments: form.value.responsibleDepartments,
         decisionCommittee: form.value.decisionBody,
         topic: form.value.topic,
-        status: 'pending',
+        status: 'in-progress',
         content: form.value.content,
         ...(form.value.dueDate && { dueDate: form.value.dueDate })
       }

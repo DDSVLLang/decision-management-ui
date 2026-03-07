@@ -93,8 +93,7 @@ export const useReportsStore = defineStore('reports', () => {
                 return
             }
 
-            decisions.value = response.data.content
-                .map(mapApiDecisionToReportDecision)
+            decisions.value = response.data.content.map(mapApiDecisionToReportDecision)
             currentPage.value = response.data.number
             totalPages.value = response.data.totalPages
             totalElements.value = response.data.totalElements
@@ -125,7 +124,6 @@ export const useReportsStore = defineStore('reports', () => {
     const reportDecisions = computed(() =>
         decisions.value
             .filter(d => d.status !== 'completed')
-            .sort((a, b) => new Date(a.decisionDate).getTime() - new Date(b.decisionDate).getTime())
     )
 
     const decisionsWithoutReportForSelectedYear = computed(() =>

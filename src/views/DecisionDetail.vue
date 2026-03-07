@@ -41,7 +41,7 @@
           <Menu v-if="authStore.isAdmin" as="div" class="relative inline-block text-left">
             <div>
               <MenuButton class="inline-flex w-full justify-center gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-                {{ decision.status === 'completed' ? 'Abgeschlossen' : 'Als erledigt markieren' }}
+                {{ decision.status === 'completed' ? 'Abgeschlossen' : 'In Bearbeitung' }}
                 <ChevronDownIcon class="-mr-1 h-5 w-5 text-gray-400" aria-hidden="true" />
               </MenuButton>
             </div>
@@ -125,7 +125,7 @@
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700">Thema</label>
-                <p class="mt-1 text-sm text-gray-900">{{ decision.topic }}</p>
+                <p class="mt-1 text-sm text-gray-900">{{ decision.topic === 'UNKNOWN' ? 'Unbekannt'  : decision.topic }}</p>
               </div>
               <div v-if="decision.dueDate">
                 <label class="block text-sm font-medium text-gray-700">Fälligkeit</label>
@@ -200,16 +200,16 @@
                   <textarea
                       v-model="currentReportContent"
                       rows="8"
-                      :disabled="authStore.isAdmin && !currentReport"
+                      :disabled="(authStore.isAdmin && !currentReport) || (!authStore.isAdmin && isCompleted)"
                       class="w-full text-sm text-gray-700 border-none resize-none focus:outline-none disabled:bg-gray-50 disabled:text-gray-500"
-                      :placeholder="authStore.isAdmin && !currentReport ? 'Kein Bericht vorhanden' : 'Bericht für das ausgewählte Jahr eingeben...'"
+                      :placeholder="authStore.isAdmin && !currentReport ? 'Kein Bericht vorhanden' : (!authStore.isAdmin && isCompleted) ? 'Beschluss ist abgeschlossen' : 'Bericht für das ausgewählte Jahr eingeben...'"
                   />
                 </div>
                 <div v-if="!authStore.isAdmin || currentReport" class="mt-4 flex items-center space-x-2">
                   <label class="text-sm font-medium text-gray-700">Voraussichtlich erledigt bis:</label>
                   <select
                       v-model="currentReportQuarter"
-                      :disabled="authStore.isAdmin && !currentReport"
+                      :disabled="(authStore.isAdmin && !currentReport) || (!authStore.isAdmin && isCompleted)"
                       class="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100 disabled:text-gray-500"
                   >
                     <option value="">Nicht angegeben</option>
@@ -237,27 +237,15 @@
                 <div v-if="!authStore.isAdmin || currentReport" class="mt-4 flex justify-end space-x-2">
                   <button
                       @click="saveCurrentReport"
-                      :disabled="authStore.isAdmin && !currentReport"
+                      :disabled="(authStore.isAdmin && !currentReport) || (!authStore.isAdmin && isCompleted)"
                       :class="[
                         'px-4 py-2 text-sm rounded-lg transition-colors duration-200',
-                        authStore.isAdmin && !currentReport
+                        (authStore.isAdmin && !currentReport) || (!authStore.isAdmin && isCompleted)
                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                           : 'bg-gray-600 text-white hover:bg-gray-700'
                       ]"
                   >
-                    Bericht speichern
-                  </button>
-                  <button
-                      @click="completeCurrentReport"
-                      :disabled="isReportContentEmpty || (authStore.isAdmin && !currentReport)"
-                      :class="[
-                    'px-4 py-2 text-sm rounded-lg transition-colors duration-200',
-                    isReportContentEmpty || (authStore.isAdmin && !currentReport)
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : 'bg-primary-600 text-white hover:bg-primary-700'
-                  ]"
-                  >
-                    Bericht abschließen
+                    {{ !authStore.isAdmin ? 'Bericht zwischenspeichern' : 'Bericht speichern'}}
                   </button>
                 </div>
               </div>
@@ -371,9 +359,6 @@ const selectedYear = ref(store.getCurrentYear())
 const currentReportContent = ref('')
 const currentReportQuarter = ref('')
 
-const isReportContentEmpty = computed(() => {
-  return !currentReportContent.value || currentReportContent.value.trim() === ''
-})
 const previousReports = computed(() => {
   if (!decision.value?.reports) return []
   return decision.value.reports
@@ -406,9 +391,17 @@ function formatDate(dateString: string): string {
   return new Date(dateString).toLocaleDateString('de-DE')
 }
 
-function setCompleted(completed: boolean) {
-  if (decision.value) {
-    store.setDecisionCompleted(decision.value.id, completed)
+async function setCompleted(completed: boolean) {
+  if (!decision.value) return
+
+  try {
+    await store.setDecisionCompleted(decision.value.id, completed)
+    toastStore.success(
+        completed ? 'Beschluss wurde als abgeschlossen markiert' : 'Beschluss wurde wieder in Bearbeitung gesetzt',
+        3000
+    )
+  } catch (err: any) {
+    toastStore.error(`Fehler beim Aktualisieren des Status: ${err.message}`, 5000)
   }
 }
 
@@ -424,6 +417,11 @@ async function toggleCanBeCompleted() {
 
 async function saveCurrentReport() {
   if (!decision.value) return
+
+  if (!authStore.isAdmin && isCompleted.value) {
+    toastStore.error('Berichte können nicht bearbeitet werden, wenn der Beschluss abgeschlossen ist.', 5000)
+    return
+  }
 
   const reportData = {
     year: selectedYear.value,
@@ -445,30 +443,6 @@ async function saveCurrentReport() {
     }
   } catch (error: any) {
     toastStore.error(`Fehler beim Speichern: ${error.message}`, 5000)
-  }
-}
-
-async function completeCurrentReport() {
-  if (!decision.value) return
-
-  // Check permissions - admins can only complete existing reports
-  if (authStore.isAdmin && !currentReport.value) {
-    alert('Nur Benutzer können neue Berichte erstellen.')
-    return
-  }
-
-  // Show confirmation dialog
-  const confirmed = confirm(`Möchten Sie den Bericht zum Jahr ${selectedYear.value} wirklich abschließen?`)
-  if (!confirmed) return
-
-  // First save the current report
-  await saveCurrentReport()
-
-  // Then switch to a different year to show the saved report in the previous reports list
-  // Find the next available year that doesn't have a report yet
-  const currentYearIndex = yearOptions.value.findIndex(y => y === selectedYear.value)
-  if (currentYearIndex < yearOptions.value.length - 1) {
-    selectedYear.value = yearOptions.value[currentYearIndex + 1]
   }
 }
 </script>

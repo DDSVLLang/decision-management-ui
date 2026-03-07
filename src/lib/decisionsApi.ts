@@ -76,6 +76,7 @@ export interface DecisionSearchParams {
     page?: number
     size?: number
     status?: string
+    canBeCompleted?: string
     committee?: string
     department?: string
     topic?: string
@@ -145,6 +146,9 @@ export class DecisionsApi {
             if (params.status) {
                 queryParams.append('status', params.status)
             }
+            if (params.canBeCompleted) {
+                queryParams.append('canBeCompleted', params.canBeCompleted)
+            }
             if (params.committee) {
                 queryParams.append('committee', params.committee)
             }
@@ -194,6 +198,16 @@ export class DecisionsApi {
             return response
         } catch (error: any) {
             console.error('Error deleting decision:', error)
+            throw error
+        }
+    }
+
+    static async updateDecisionStatus(id: string, status: 'in-progress' | 'completed'): Promise<UpdateDecisionResponse> {
+        try {
+            const response = await api.put<UpdateDecisionResponse>(`/api/v1/decision/${id}`, { status })
+            return response
+        } catch (error: any) {
+            console.error('Error updating decision status:', error)
             throw error
         }
     }

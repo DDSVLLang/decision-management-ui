@@ -24,20 +24,6 @@
       <div class="bg-white rounded-lg shadow p-6">
         <div class="flex items-center">
           <div class="flex-shrink-0">
-            <div class="w-8 h-8 bg-warning-100 rounded-lg flex items-center justify-center">
-              <ClockIcon class="h-5 w-5 text-warning-600" />
-            </div>
-          </div>
-          <div class="ml-4">
-            <p class="text-sm font-medium text-gray-600">Ausstehend</p>
-            <p class="text-2xl font-bold text-gray-900">{{ pendingDecisions.length }}</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex items-center">
-          <div class="flex-shrink-0">
             <div class="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
               <PlayIcon class="h-5 w-5 text-primary-600" />
             </div>

@@ -34,8 +34,8 @@
                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
               <option value="">Alle</option>
-              <option value="pending">Ausstehend</option>
               <option value="in-progress">In Bearbeitung</option>
+              <option value="canBeCompleted">Erledigt</option>
               <option value="completed">Abgeschlossen</option>
             </select>
           </div>
@@ -108,6 +108,9 @@
                 Titel
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Drucksache
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Gremium
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -139,6 +142,9 @@
                   {{ decision.title }}
                   <span v-if="decision.deleted" class="ml-2 text-xs font-medium text-gray-500">(gelöscht)</span>
                 </div>
+              </td>
+              <td :class="['px-6 py-4 whitespace-nowrap text-sm', decision.deleted ? 'text-gray-400' : 'text-gray-900']">
+                {{ decision.printMatter }}
               </td>
               <td :class="['px-6 py-4 whitespace-nowrap text-sm', decision.deleted ? 'text-gray-400' : 'text-gray-900']">
                 {{ decision.decisionBody }}
@@ -358,7 +364,10 @@ function performSearch() {
     size: 20
   }
 
-  if (statusFilter.value) {
+  if (statusFilter.value === 'canBeCompleted') {
+    params.canBeCompleted = 'true'
+    params.status = 'in-progress'
+  } else {
     params.status = statusFilter.value
   }
   if (committeeFilter.value) {
@@ -427,7 +436,13 @@ function goToPage(page: number) {
   }
 
   if (statusFilter.value) {
-    params.status = statusFilter.value
+    if (statusFilter.value === 'canBeCompleted') {
+      params.canBeCompleted = 'true'
+      params.status = 'in-progress'
+    } else {
+      params.status = statusFilter.value
+    }
+
   }
   if (committeeFilter.value) {
     params.committee = committeeFilter.value
