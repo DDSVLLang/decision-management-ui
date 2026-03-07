@@ -1,37 +1,43 @@
 import jsPDF from 'jspdf'
 import type { ReportDecision } from '../stores/reports'
 
+// ─── Public API types ─────────────────────────────────────────────────────────
+
 interface PDFExportOptions {
     year: string
     decisions: ReportDecision[]
     title: string
+    /** Base64-encoded PNG of the watermark logo (optional). */
+    watermarkPng?: string
 }
 
-// ─── Layout Constants (Landscape A4: 297 x 210 mm) ───────────────────────────
+// ─── Layout Constants (Landscape A4: 297 × 210 mm) ───────────────────────────
 
 const MARGIN      = 12
 const FONT_SIZE   = 9
 const LINE_H      = 4.5   // line height for normal/bold text (mm)
-const SECTION_GAP = 3     // vertical gap between Thema-row → Betreff → Sachstand
-const BLOCK_GAP   = 6     // half-gap above AND below the separator line
-const FOOTER_H    = 9     // reserved height at page bottom for footer
+const SECTION_GAP = 2
+const BLOCK_GAP   = 5
+const THEMA_GAP   = 1
+const FOOTER_H    = 9
+
+// ─── Column positions (Thema removed — now a full-width line) ─────────────────
+// 5 columns spread across the full content width (273 mm usable)
 
 const COL = {
-    topic:      MARGIN,        // 12
-    date:       MARGIN + 60,   // 54
-    gremium:    MARGIN + 95,   // 78
-    drucksache: MARGIN + 130,   // 100
-    dept:       MARGIN + 165,  // 132
-    completion: MARGIN + 200,  // 164
+    date:       MARGIN,            // 12
+    gremium:    MARGIN + 50,       // 62
+    drucksache: MARGIN + 100,      // 112
+    dept:       MARGIN + 158,      // 170
+    completion: MARGIN + 218,      // 230
 } as const
 
 const COL_W = {
-    topic:      40,   // must be < (COL.date - COL.topic - 2)
-    date:       22,
-    gremium:    20,
-    drucksache: 28,
-    dept:       30,
-    completion: 22,
+    date:       38,
+    gremium:    38,
+    drucksache: 50,
+    dept:       50,
+    completion: 45,
 } as const
 
 // ─── Page helpers ─────────────────────────────────────────────────────────────
@@ -62,38 +68,60 @@ function drawFooter(doc: jsPDF, pageNum: number, totalPages: number, reportTitle
     doc.setTextColor(0, 0, 0)
 }
 
+// ─── Watermark ────────────────────────────────────────────────────────────────
+
+function drawWatermark(doc: jsPDF, watermarkPng: string): void {
+    const wmWidth  = 100
+    const wmHeight = 100
+    const cx = (pageWidth(doc)  - wmWidth)  / 2
+    const cy = (pageHeight(doc) - wmHeight) / 2
+
+    const gState = new (doc as any).GState({ opacity: 0.06 })
+    doc.saveGraphicsState()
+    doc.setGState(gState)
+    doc.addImage(watermarkPng, 'SVG', cx, cy, wmWidth, wmHeight)
+    doc.restoreGraphicsState()
+}
+
 // ─── Column header (redrawn on every new page) ────────────────────────────────
 
-const COL_HEADER_H = 13  // total height consumed by the header block
+const COL_HEADER_H = 16
 
 function drawColumnHeader(doc: jsPDF, y: number): number {
-    // Grey background strip
-    doc.setFillColor(235, 235, 235)
-    doc.rect(MARGIN, y - 1, contentWidth(doc), COL_HEADER_H - 4, 'F')
+    const cw = contentWidth(doc)
 
-    // Row 1: column labels
+    // Grey background — covers ALL header rows
+    doc.setFillColor(235, 235, 235)
+    doc.rect(MARGIN, y - 2, cw, COL_HEADER_H + 2, 'F')
+
     doc.setFontSize(FONT_SIZE)
     doc.setFont('helvetica', 'bold')
     doc.setTextColor(30, 30, 30)
-    doc.text('Thema',              COL.topic,      y)
-    doc.text('Beschlussdatum',     COL.date,       y)
-    doc.text('Gremium',            COL.gremium,    y)
-    doc.text('Drucksache',         COL.drucksache, y)
-    doc.text('zust. OE',           COL.dept,       y)
-    doc.text('vor. erledigt bis:', COL.completion, y)
-    doc.setTextColor(0, 0, 0)
+
+    // Row 1: "Thema" label (full width)
+    doc.text('Thema', MARGIN, y + 1)
+    y += LINE_H + 2
+
+    // Row 2: column labels — right-aligned to match data columns
+    doc.text('Beschlussdatum',     COL.date,                            y)
+    doc.text('Gremium',            COL.gremium    + COL_W.gremium,      y, { align: 'right' })
+    doc.text('Drucksache',         COL.drucksache + COL_W.drucksache,   y, { align: 'right' })
+    doc.text('zust. OE',           COL.dept       + COL_W.dept,         y, { align: 'right' })
+    doc.text('vor. erledigt bis', COL.completion  + COL_W.completion,   y, { align: 'right' })
     y += LINE_H + 1
 
-    // Row 2: sub-labels
+    // Row 3: sub-label
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(FONT_SIZE - 1)
-    doc.text('Betreff / Stand der Erledigung', COL.topic, y)
+    doc.text('Betreff / Stand der Erledigung', MARGIN, y)
     y += LINE_H
 
     // Bottom border
     doc.setLineWidth(0.5)
+    doc.setTextColor(0, 0, 0)
     doc.line(MARGIN, y, pageWidth(doc) - MARGIN, y)
     doc.setFontSize(FONT_SIZE)
+
     return y + 2
 }
 
@@ -120,12 +148,28 @@ function writeWrapped(
     return y
 }
 
+/**
+ * Writes pre-split lines RIGHT-ALIGNED at (x + maxWidth).
+ * Used for Gremium, Drucksache, zust. OE, vor. erledigt bis columns.
+ */
+function writeWrappedRight(
+    doc: jsPDF, lines: string[], x: number, y: number,
+    maxWidth: number, lineHeight: number, onNewPage: () => number,
+): number {
+    const rightX = x + maxWidth
+    for (const line of lines) {
+        if (y > maxY(doc)) y = onNewPage()
+        doc.text(line, rightX, y, { align: 'right' })
+        y += lineHeight
+    }
+    return y
+}
+
 // ─── Domain helpers ───────────────────────────────────────────────────────────
 
 function getReportContent(decision: ReportDecision, year: string): string {
     if (!decision.reports?.length) return 'Keine Angaben'
-    return decision.reports.find((r) => r.year === year)?.content
-        ?? decision.reports.find((r) => r.year === year)?.content ?? 'Keine Angaben'
+    return decision.reports.find((r) => r.year === year)?.content ?? 'Keine Angaben'
 }
 
 function getExpectedCompletion(decision: ReportDecision, year: string): string {
@@ -133,46 +177,59 @@ function getExpectedCompletion(decision: ReportDecision, year: string): string {
     return decision.reports.find((r) => r.year === year)?.expectedCompletionQuarter ?? ''
 }
 
-// ─── Block height estimator ───────────────────────────────────────────────────
-/**
- * Estimates the total rendered height of a single decision block (mm).
- * Used ONLY for the "keep block together" page-break check.
- * Does NOT need to be pixel-perfect — a generous estimate is intentional.
- */
+// ─── Date formatting helper ───────────────────────────────────────────────────
+
+function formatDate(dateStr: string | undefined | null): string {
+    if (!dateStr) return ''
+    const d = new Date(dateStr)
+    if (isNaN(d.getTime())) return ''
+    return d.toLocaleDateString('de-DE', {
+        day:   '2-digit',
+        month: '2-digit',
+        year:  'numeric',
+    })
+}
+
+// ─── Block height estimator ──────────────────────────────────────────────────
+
 function estimateBlockHeight(doc: jsPDF, decision: ReportDecision, year: string): number {
     const cw = contentWidth(doc)
 
-    const topicLines      = (doc.splitTextToSize(decision.topic      ?? '', COL_W.topic)      as string[]).length
-    const gremiumLines    = (doc.splitTextToSize(decision.decisionBody ?? '', COL_W.gremium)   as string[]).length
-    const drucksacheLines = (doc.splitTextToSize(decision.printMatter  ?? '', COL_W.drucksache) as string[]).length
+    const themaLines = (doc.splitTextToSize(decision.topic ?? '', cw) as string[]).length
+
+    const gremiumLines    = (doc.splitTextToSize(decision.decisionBody ?? '', COL_W.gremium)    as string[]).length
+    const drucksacheLines = (doc.splitTextToSize(decision.printMatter  ?? '', COL_W.drucksache)  as string[]).length
     const deptText        = decision.responsibleDepartment
         ?? decision.departments?.map((d) => d.name).join(', ') ?? ''
     const deptLines       = (doc.splitTextToSize(deptText, COL_W.dept) as string[]).length
+    const dataRowH        = Math.max(gremiumLines, drucksacheLines, deptLines, 1) * LINE_H
 
-    const dataRowH = Math.max(topicLines, gremiumLines, drucksacheLines, deptLines, 1) * LINE_H
-
-    const titleLines    = (doc.splitTextToSize(decision.title ?? '', cw) as string[]).length
-    const sachstand     = getReportContent(decision, year)
+    const titleLines     = (doc.splitTextToSize(decision.title ?? '', cw) as string[]).length
+    const sachstand      = getReportContent(decision, year)
     const sachstandLines = (doc.splitTextToSize(sachstand, cw) as string[]).length
 
     return (
-        dataRowH
-        + SECTION_GAP
-        + titleLines    * LINE_H + SECTION_GAP
-        + LINE_H                              // "Sachstand:" label
-        + sachstandLines * LINE_H
+        themaLines * LINE_H + THEMA_GAP     // Thema + tight gap
+        + dataRowH + SECTION_GAP            // Data row
+        + titleLines * LINE_H + SECTION_GAP // Betreff
+        + LINE_H                            // "Sachstand:" label
+        + sachstandLines * LINE_H           // Sachstand content
+        + 2                                 // safety margin
     )
 }
 
+// ─── Build PDF document ──────────────────────────────────────────────────────
+
 function buildPDFDoc(options: PDFExportOptions): jsPDF {
-    const { year, decisions } = options
+    const { year, decisions, watermarkPng } = options
 
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
 
-    const fullTitle   = `Bericht zum Ende Jahr ${year} über die noch nicht abschließend erledigten Beschlüsse der Gremien`
+    const fullTitle = `Bericht zum Ende Jahr ${year} über die noch nicht abschließend erledigten Beschlüsse der Gremien`
 
-    // ── Page header factory ───────────────────────────────────────────────────
+    // ── Page header factory ───────────────────────────────────────────────
     function drawPageHeader(): number {
+        if (watermarkPng) drawWatermark(doc, watermarkPng)
         return drawColumnHeader(doc, MARGIN + LINE_H)
     }
 
@@ -181,7 +238,9 @@ function buildPDFDoc(options: PDFExportOptions): jsPDF {
         return drawPageHeader()
     }
 
-    // ── Page 1: global title ──────────────────────────────────────────────────
+    // ── Page 1: watermark + global title ──────────────────────────────────
+    if (watermarkPng) drawWatermark(doc, watermarkPng)
+
     let y = MARGIN + 2
     doc.setFontSize(13)
     doc.setFont('helvetica', 'bold')
@@ -190,13 +249,11 @@ function buildPDFDoc(options: PDFExportOptions): jsPDF {
 
     y = drawColumnHeader(doc, y)
 
-    // ── Decision blocks ───────────────────────────────────────────────────────
-    for (const decision of decisions) {
+    // ── Decision blocks ───────────────────────────────────────────────────
+    decisions.forEach((decision) => {
         doc.setFontSize(FONT_SIZE)
 
-        const decisionDate   = decision.decisionDate
-            ? new Date(decision.decisionDate).toLocaleDateString('de-DE')
-            : ''
+        const decisionDate   = formatDate(decision.decisionDate)
         const topicText      = decision.topic ?? ''
         const gremiumText    = decision.decisionBody ?? ''
         const drucksacheText = decision.printMatter ?? ''
@@ -207,70 +264,97 @@ function buildPDFDoc(options: PDFExportOptions): jsPDF {
         const titleText      = decision.title ?? ''
         const sachstand      = getReportContent(decision, year)
 
-        // ── FIX 3: Keep entire block on one page ──────────────────────────────
-        // BLOCK_GAP/2 above separator + separator + BLOCK_GAP/2 below + content
+        // ── Keep entire block on one page ─────────────────────────────────
         const blockH = BLOCK_GAP + estimateBlockHeight(doc, decision, year)
         if (y + blockH > maxY(doc)) {
             y = onNewPage()
         }
 
-        // ── FIX 2: Separator centered between blocks ──────────────────────────
-        // Equal gap (BLOCK_GAP/2) ABOVE and BELOW the line
-        y += BLOCK_GAP / 2
-        doc.setLineWidth(0.15)
-        doc.setDrawColor(200, 200, 200)
-        doc.line(MARGIN, y, pageWidth(doc) - MARGIN, y)
-        doc.setDrawColor(0, 0, 0)
-        y += BLOCK_GAP / 2
+        // ── Block spacing ─────────────────────────────────────────────────
+        y += BLOCK_GAP
 
-        // ── FIX 1: Data row — pre-split with corrected column widths ─────────
+        // ── Thema (full-width bold line) ──────────────────────────────────
         doc.setFont('helvetica', 'bold')
-        const topicLines      = doc.splitTextToSize(topicText,      COL_W.topic)      as string[]
+        y = writeWrapped(doc, topicText, MARGIN, y, contentWidth(doc), LINE_H, onNewPage)
+        y += THEMA_GAP
+
+        // ── Data row (5 columns) — right-aligned except date ──────────────
+        doc.setFont('helvetica', 'normal')
         const gremiumLines    = doc.splitTextToSize(gremiumText,    COL_W.gremium)    as string[]
         const drucksacheLines = doc.splitTextToSize(drucksacheText, COL_W.drucksache) as string[]
         const deptLines       = doc.splitTextToSize(deptText,       COL_W.dept)       as string[]
 
         const dataRowLines = Math.max(
-            topicLines.length, gremiumLines.length,
-            drucksacheLines.length, deptLines.length, 1,
+            gremiumLines.length,
+            drucksacheLines.length,
+            deptLines.length,
+            1,
         )
         const dataRowH = dataRowLines * LINE_H
 
-        doc.text(topicLines,      COL.topic,      y)
-        doc.text(decisionDate,    COL.date,       y)
-        doc.text(gremiumLines,    COL.gremium,    y)
-        doc.text(drucksacheLines, COL.drucksache, y)
-        doc.text(deptLines,       COL.dept,       y)
-        if (completion) doc.text(completion, COL.completion, y)
+        // Date stays left-aligned
+        doc.text(decisionDate, COL.date, y)
+
+        // Right-aligned columns
+        const dataRowY = y
+        writeWrappedRight(doc, gremiumLines,    COL.gremium,    dataRowY, COL_W.gremium,    LINE_H, onNewPage)
+        writeWrappedRight(doc, drucksacheLines, COL.drucksache, dataRowY, COL_W.drucksache, LINE_H, onNewPage)
+        writeWrappedRight(doc, deptLines,       COL.dept,       dataRowY, COL_W.dept,       LINE_H, onNewPage)
+        if (completion) {
+            doc.text(completion, COL.completion + COL_W.completion, dataRowY, { align: 'right' })
+        }
 
         y += dataRowH + SECTION_GAP
 
-        // ── Betreff ───────────────────────────────────────────────────────────
+        // ── Betreff ───────────────────────────────────────────────────────
         doc.setFont('helvetica', 'normal')
         y = writeWrapped(doc, titleText, MARGIN, y, contentWidth(doc), LINE_H, onNewPage)
         y += SECTION_GAP
 
-        // ── Sachstand ─────────────────────────────────────────────────────────
+        // ── Sachstand ─────────────────────────────────────────────────────
         doc.setFont('helvetica', 'bold')
         y = writeLine(doc, 'Sachstand:', MARGIN, y, LINE_H, onNewPage)
 
         doc.setFont('helvetica', 'normal')
         y = writeWrapped(doc, sachstand, MARGIN, y, contentWidth(doc), LINE_H, onNewPage)
-    }
+    })
 
     return doc
+}
+
+// ─── SVG → PNG conversion helper ─────────────────────────────────────────────
+
+export function svgToPng(svgSource: string, width = 400, height = 400): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const img = new Image()
+        img.onload = () => {
+            const canvas = document.createElement('canvas')
+            canvas.width  = width
+            canvas.height = height
+            const ctx = canvas.getContext('2d')
+            if (!ctx) { reject(new Error('Canvas 2D context unavailable')); return }
+            ctx.drawImage(img, 0, 0, width, height)
+            resolve(canvas.toDataURL('image/png'))
+        }
+        img.onerror = () => reject(new Error('Failed to load SVG for watermark conversion'))
+
+        if (svgSource.trim().startsWith('<')) {
+            const blob = new Blob([svgSource], { type: 'image/svg+xml;charset=utf-8' })
+            img.src = URL.createObjectURL(blob)
+        } else {
+            img.src = svgSource
+        }
+    })
 }
 
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 export function exportReportToPDF(options: PDFExportOptions): void {
-
     const { year } = options
     const doc = buildPDFDoc(options)
 
     const reportTitle = `Bericht ${year} – nicht erledigte Beschlüsse der Gremien`
 
-    // ── Footers: rendered last when totalPages is known ───────────────────────
     const totalPages: number = (doc.internal as any).pages.length - 1
     for (let i = 1; i <= totalPages; i++) {
         doc.setPage(i)
@@ -284,7 +368,7 @@ export function exportReportToPDF(options: PDFExportOptions): void {
 export function printReportPDF(options: PDFExportOptions): void {
     const doc = buildPDFDoc(options)
     const blob = doc.output('blob')
-    const url = URL.createObjectURL(blob)
+    const url  = URL.createObjectURL(blob)
     const printWindow = window.open(url, '_blank')
     if (printWindow) {
         printWindow.addEventListener('load', () => {
