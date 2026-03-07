@@ -196,16 +196,16 @@
       <!-- Export Actions -->
       <div class="mt-6 flex justify-end space-x-4">
         <button
-            @click="exportReport"
-            :disabled="reportsStore.loading"
-            class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+            @click="exportToPDF"
+            :disabled="reportsStore.loading || reportsStore.reportDecisions.length === 0"
+            class="px-4 py-2 bg-error-600 text-white rounded-lg hover:bg-error-700 transition-colors duration-200 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <DocumentArrowDownIcon class="h-4 w-4 mr-2" />
-          Bericht exportieren
+          Als PDF herunterladen
         </button>
         <button
             @click="printReport"
-            :disabled="reportsStore.loading"
+            :disabled="reportsStore.loading || reportsStore.reportDecisions.length === 0"
             class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <PrinterIcon class="h-4 w-4 mr-2" />
@@ -220,7 +220,8 @@
 import { computed, onMounted } from 'vue'
 import { useReportsStore } from '../stores/reports'
 import AppLayout from '../components/AppLayout.vue'
-import { DocumentArrowDownIcon, PrinterIcon } from '@heroicons/vue/24/outline'
+import { PrinterIcon, DocumentArrowDownIcon } from '@heroicons/vue/24/outline'
+import { exportReportToPDF, printReportPDF } from '../lib/pdfExport'
 
 const reportsStore = useReportsStore()
 const yearOptions = computed(() => reportsStore.generateYearOptions().reverse())
@@ -285,34 +286,19 @@ function formatDate(dateString: string): string {
   return new Date(dateString).toLocaleDateString('de-DE')
 }
 
-function exportReport() {
-  const csvContent = [
-    ['Thema', 'Betreff', 'Beschlussdatum', 'Gremium', 'Drucksache', 'Fachbereich', 'Status', 'Sachstand', 'vor. erledigt bis'].join(';'),
-    ...reportsStore.reportDecisions.map(decision => [
-      decision.topic,
-      decision.title,
-      formatDate(decision.decisionDate),
-      decision.decisionBody,
-      decision.printMatter,
-      decision.responsibleDepartment,
-      decision.status === 'pending' ? 'Ausstehend' : 'In Bearbeitung',
-      getSelectedYearReport(decision),
-      getSelectedYearExpectedCompletion(decision) || '-'
-    ].join(';'))
-  ].join('\n')
-
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-  const link = document.createElement('a')
-  const url = URL.createObjectURL(blob)
-  link.setAttribute('href', url)
-  link.setAttribute('download', `beschluss-bericht-${new Date().toISOString().split('T')[0]}.csv`)
-  link.style.visibility = 'hidden'
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
+function exportToPDF() {
+  exportReportToPDF({
+    year: reportsStore.selectedYear,
+    decisions: reportsStore.reportDecisions,
+    title: `Bericht zum Ende Jahr ${reportsStore.selectedYear} über die noch nicht abschließend erledigten Beschlüsse der Gremien`
+  })
 }
 
 function printReport() {
-  window.print()
+  printReportPDF({
+    year: reportsStore.selectedYear,
+    decisions: reportsStore.reportDecisions,
+    title: `Bericht zum Ende Jahr ${reportsStore.selectedYear} über die noch nicht abschließend erledigten Beschlüsse der Gremien`
+  })
 }
 </script>
